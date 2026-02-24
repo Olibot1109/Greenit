@@ -1,48 +1,30 @@
-# Greenit (Node.js RAM-only host/join Gold Quest clone)
+# Greenit (Blooket-style Gold Quest clone)
 
-Greenit is a lightweight Blook-style hosting clone focused on a **Gold Quest** flow.
+Greenit is a lightweight Node.js app that runs a **host + player** trivia flow inspired by Blooket.
 
-## What it does
-- Host chooses **Host** and pastes a Blooket game URL.
-- Host chooses a blook (preset or manual blook name/image URL).
-- Greenit creates a lobby with a join code and host PIN.
-- Players can join with code + name + blook.
-- Host sees players joining live in the lobby view and can press **Start**.
-- Data is stored **in RAM only** (nothing written to files).
+## What's improved
+- Players can join a lobby and **wait for the host to start**.
+- Once host starts, players immediately see question cards.
+- Correct answers grant random gold; host lobby shows each player's **gold climbing live**.
+- Better game-like UI styling for host/player views.
+- Added **set search** endpoint/UI (`/api/blooket/search`) with remote Blooket-compatible lookup + local fallback sets.
 
 ## Run
 ```bash
-node server.js
+npm start
 ```
-Open http://localhost:3000
+Open: http://localhost:3000
 
 ## API
-- `GET /api/blooks` list available starter blooks.
-- `GET /api/games` list all in-memory games.
-- `POST /api/host` create a host lobby (mode is always Gold Quest).
-- `GET /api/games/:code/lobby` fetch lobby state.
-- `POST /api/games/:code/join` join as a player.
-- `POST /api/games/:code/start` start Gold Quest.
-- `DELETE /api/games/:code` close/delete lobby.
+- `GET /api/blooks`
+- `GET /api/blooket/search?q=...`
+- `POST /api/host`
+- `GET /api/games/:code/lobby`
+- `POST /api/games/:code/join`
+- `POST /api/games/:code/start`
+- `GET /api/games/:code/player/:playerId`
+- `POST /api/games/:code/player/:playerId/answer`
+- `DELETE /api/games/:code`
 
-### Host payload
-```json
-{
-  "blooketUrl": "https://play.blooket.com/play?id=abc123",
-  "hostBlook": {
-    "name": "Unicorn",
-    "imageUrl": "https://ac.blooket.com/dashboard/blooks/unicorn.svg"
-  }
-}
-```
-
-### Join payload
-```json
-{
-  "playerName": "Alex",
-  "blook": {
-    "name": "Fox",
-    "imageUrl": "https://ac.blooket.com/dashboard/blooks/fox.svg"
-  }
-}
-```
+## Notes
+This project is still RAM-only (no persistence). If remote set search is unavailable, Greenit automatically uses bundled fallback sets.
