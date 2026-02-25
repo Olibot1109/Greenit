@@ -72,7 +72,7 @@ function parseBody(req) {
 }
 
 function randomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const chars = '1234567890';
   let code = '';
   for (let i = 0; i < 6; i += 1) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
