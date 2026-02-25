@@ -5,11 +5,11 @@ const { URL } = require('url');
 const PORT = process.env.PORT || 3000;
 
 const blookCatalog = [
-  { id: 'chick', name: 'Chick', rarity: 'Common', imageUrl: 'https://ac.blooket.com/dashboard/blooks/chick.svg' },
-  { id: 'fox', name: 'Fox', rarity: 'Common', imageUrl: 'https://ac.blooket.com/dashboard/blooks/fox.svg' },
-  { id: 'frog', name: 'Frog', rarity: 'Common', imageUrl: 'https://ac.blooket.com/dashboard/blooks/frog.svg' },
-  { id: 'unicorn', name: 'Unicorn', rarity: 'Rare', imageUrl: 'https://ac.blooket.com/dashboard/blooks/unicorn.svg' },
-  { id: 'astronaut', name: 'Astronaut', rarity: 'Epic', imageUrl: 'https://ac.blooket.com/dashboard/blooks/astronaut.svg' },
+  { id: 'chick', name: 'Chick', rarity: 'Common', imageUrl: 'https://greenit-aqfd.onrender.com/Blooket/IMG_1282.webp' },
+  { id: 'cow', name: 'Cow', rarity: 'Common', imageUrl: 'https://greenit-aqfd.onrender.com/Blooket/IMG_1283.webp' },
+  { id: 'goat', name: 'Goat', rarity: 'Common', imageUrl: 'https://greenit-aqfd.onrender.com/Blooket/IMG_1284.webp' },
+  { id: 'horse', name: 'Horse', rarity: 'Common', imageUrl: 'https://greenit-aqfd.onrender.com/Blooket/IMG_1285.webp' },
+  { id: 'duck', name: 'Duck', rarity: 'Epic', imageUrl: 'https://greenit-aqfd.onrender.com/Blooket/IMG_1286.webp' },
 ];
 
 const fallbackSets = [
