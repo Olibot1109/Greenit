@@ -1,78 +1,155 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Greenit - Quiz Arena</title>
-<style>
-:root{--bg:#0b1022;--card:#111833;--line:#2c3f76;--text:#eef3ff;--muted:#9bb0de;--accent:#4f7dff;--accent2:#28c2a7;--gold:#ffdf4d}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui;background:radial-gradient(circle at top,#172f66,#0b1022 65%);color:var(--text)}
-.wrap{max-width:1160px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.tag{padding:6px 10px;border-radius:999px;background:#1b2550;color:var(--muted);font-weight:700;font-size:12px}
-.card{background:linear-gradient(180deg,#141d3c,#101732);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 12px 28px #0006;margin-top:14px}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.hidden{display:none}
-button{background:var(--accent);color:#fff;border:0;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;transition:transform .1s ease,filter .2s}
-button:hover{filter:brightness(1.08)}button:active{transform:translateY(1px)}button.alt{background:#283b71}button.sub{background:#1a264f}
-input,textarea,select{background:#0c1330;color:#fff;border:1px solid #2c3f76;padding:10px;border-radius:10px}
-textarea{width:100%;min-height:84px;resize:vertical}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.blook{padding:8px;border:1px solid #334d8f;border-radius:10px;cursor:pointer;text-align:center;background:#0e1735}
-.blook img{height:58px}.status{min-height:24px;color:#9ec0ff}.player{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #263665;gap:8px}
-.player:last-child{border-bottom:0}.gold{color:var(--gold);font-weight:700}.answer{width:100%;text-align:left;margin:6px 0;background:#1a295b}
-.columns{display:grid;grid-template-columns:1.3fr .9fr;gap:14px}@media (max-width:900px){.columns{grid-template-columns:1fr}}
-.small{font-size:13px;color:var(--muted)}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Greenit</title>
+  <style>
+    :root{--bg:#2242b8;--bg2:#1b2f88;--card:#fff;--line:#d7def9;--text:#1c2452;--muted:#56619c;--gold:#bb7d00}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text)}
+    .wrap{max-width:1120px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+    .title{font-size:30px;font-weight:900;color:#fff}.tag{font-size:12px;font-weight:700;color:#fff;background:#ef4d73;padding:7px 11px;border-radius:999px}
+    .card{background:var(--card);border:3px solid #edf1ff;border-radius:16px;box-shadow:0 8px 0 rgba(0,0,0,.2);padding:16px;margin-top:12px}
+    .hidden{display:none}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.stack{display:grid;gap:10px}
+    .columns{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}.hostgrid{display:grid;grid-template-columns:1.5fr .9fr;gap:14px}
+    button{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;color:#fff;background:#3a62ff}button.alt{background:#6e53d9}button.warn{background:#e9486e}button.sub{background:#29a3e6}
+    input,select,textarea{border:2px solid var(--line);border-radius:10px;padding:10px;background:#f7f9ff;color:#1f2b66}textarea{width:100%;min-height:84px}
+    .small{font-size:13px;color:var(--muted)}.status{min-height:20px;color:#2d3f97}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+    .blook{border:2px solid var(--line);border-radius:10px;padding:9px;text-align:center;background:#f7f9ff;cursor:pointer}.blook img{height:54px}
+    .player{display:flex;justify-content:space-between;gap:8px;padding:10px;border-bottom:1px solid #e7ecff}.player:last-child{border-bottom:0}
+    .gold{color:var(--gold);font-weight:700}.kick{padding:6px 8px;font-size:12px}
+    .event-feed{border:2px solid var(--line);border-radius:10px;max-height:230px;overflow:auto}.event{padding:9px;border-bottom:1px solid #ecf1ff}.event:last-child{border-bottom:0}
+    .question{border:2px solid var(--line);border-radius:10px;background:#f8faff;padding:12px}.answer{width:100%;text-align:left;margin-top:8px;background:#2f9ee0}
+    .qr{border:2px solid var(--line);border-radius:10px;padding:8px;display:inline-block;background:#fff}
+    @media (max-width:900px){.columns,.hostgrid{grid-template-columns:1fr}}
+  </style>
 </head>
-<body><div class="wrap">
-<div class="top"><h1>🟩 Greenit Quiz Arena</h1><span class="tag">Remote source: Open Trivia DB + Local custom sets</span></div>
-<div id="home" class="card"><p>Choose a role:</p><div class="row"><button id="goHost">Host Game</button><button id="goJoin" class="alt">Join Game</button></div></div>
-<div id="host" class="card hidden">
-  <h2>Host Setup</h2><div class="row"><button id="backFromHost" class="alt">Back</button></div>
-  <div class="columns">
-    <div>
-      <h3>1) Pick a set</h3>
-      <div class="row"><input id="searchSets" placeholder="Search sets"/><button id="runSearch">Search</button></div>
-      <div id="setResults"></div>
-      <p class="small">Or create your own local custom game and save it in this browser.</p>
-      <input id="customTitle" placeholder="Custom set title"/>
-      <textarea id="customQuestions" placeholder='One per line:\nQuestion?|A|B|C|D|correct_index(0-3)'></textarea>
-      <div class="row"><button id="saveCustom" class="sub">Save custom set locally</button><button id="loadCustom" class="sub">Use saved set</button></div>
-    </div>
-    <div>
-      <h3>2) Game mode</h3>
-      <div class="row"><select id="gameType"><option value="question">Question count mode</option><option value="timed">Time attack mode</option></select></div>
-      <div class="row"><input id="questionLimit" type="number" min="1" max="30" value="30"/><span class="small">Questions (max 30)</span></div>
-      <div class="row"><input id="timeLimit" type="number" min="30" max="900" value="120"/><span class="small">Timer seconds (timed mode)</span></div>
-      <h3>3) Choose host blook</h3><div id="hostBlookGrid" class="grid"></div>
-      <button id="createHostLobby">Create Lobby</button><p id="hostStatus" class="status"></p>
+<body>
+<div class="wrap">
+  <div class="top"><div class="title">Greenit</div><div class="tag">host + join + chest + swaps</div></div>
+
+  <div id="home" class="card"><h2>Choose Role</h2><div class="row" style="margin-top:10px"><button id="goHost">Host Game</button><button id="goJoin" class="alt">Join Game</button></div></div>
+
+  <div id="host" class="card hidden">
+    <h2>Host Setup</h2><div class="row" style="margin-top:8px"><button id="backFromHost" class="alt">Back</button></div>
+    <div class="columns" style="margin-top:12px">
+      <div class="stack">
+        <h3>1) Pick a set</h3>
+        <div class="row"><input id="searchSets" placeholder="Search sets"/><button id="runSearch">Search</button></div>
+        <div id="setResults"></div>
+        <p class="small">Or use your own custom set (saved in this browser).</p>
+        <input id="customTitle" placeholder="Custom set title"/>
+        <textarea id="customQuestions" placeholder="Question?|A|B|C|D|correct_index(0-3)"></textarea>
+        <div class="row"><button id="saveCustom" class="sub">Save custom set</button><button id="loadCustom" class="sub">Use saved set</button></div>
+      </div>
+      <div class="stack">
+        <h3>2) Mode</h3>
+        <select id="gameType"><option value="question">Gold Quest (question count)</option><option value="timed">Time Attack</option></select>
+        <div class="row"><input id="questionLimit" type="number" min="1" max="30" value="20"/><span class="small">Questions</span></div>
+        <div class="row"><input id="timeLimit" type="number" min="30" max="900" value="120"/><span class="small">Timer sec</span></div>
+        <button id="createHostLobby">Create Lobby</button><p id="hostStatus" class="status"></p>
+      </div>
     </div>
   </div>
-</div>
-<div id="join" class="card hidden"><h2>Join Game</h2><button id="backFromJoin" class="alt">Back</button>
-<div class="row"><input id="joinCode" placeholder="Code"/><input id="joinName" placeholder="Name"/></div>
-<div id="joinBlookGrid" class="grid"></div><button id="joinLobby">Join</button><p id="joinStatus" class="status"></p></div>
-<div id="lobby" class="card hidden"><h2>Host Lobby <span id="lobbyCode"></span></h2><p id="lobbyMeta"></p><div id="players"></div><button id="startGame">Start</button><button id="closeLobby" class="alt">Close</button><p id="startStatus" class="status"></p></div>
-<div id="playerGame" class="card hidden"><h2>Player Panel</h2><p id="playerMeta"></p><div id="questionPanel"></div><p id="playerStatus" class="status"></p></div>
+
+  <div id="join" class="card hidden">
+    <h2>Join Game</h2><div class="row" style="margin-top:8px"><button id="backFromJoin" class="alt">Back</button></div>
+    <div class="row" style="margin-top:10px"><input id="joinCode" placeholder="Code"/><input id="joinName" placeholder="Name"/></div>
+    <div id="joinBlookGrid" class="grid" style="margin-top:10px"></div><button id="joinLobby" style="margin-top:10px">Join Lobby</button><p id="joinStatus" class="status"></p>
+  </div>
+
+  <div id="lobby" class="card hidden">
+    <h2>Host Dashboard <span id="lobbyCode"></span></h2><p id="lobbyMeta" class="small" style="margin-top:8px"></p>
+    <div class="hostgrid" style="margin-top:12px">
+      <div class="card" style="margin-top:0">
+        <h3>Leaderboard</h3>
+        <div id="players" style="margin-top:8px"></div>
+        <div class="row" style="margin-top:12px"><button id="startGame">Start</button><button id="endGame" class="warn">End for all</button><button id="closeLobby" class="alt">Delete Lobby</button></div>
+        <p id="startStatus" class="status"></p>
+      </div>
+      <div class="stack">
+        <div class="card" style="margin-top:0"><h3>Join QR</h3><p class="small" id="joinUrlText"></p><div id="qrWrap" style="margin-top:8px"></div></div>
+        <div class="card" style="margin-top:0"><h3>Event Feed</h3><div id="eventFeed" class="event-feed" style="margin-top:8px"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="playerGame" class="card hidden"><h2>Player</h2><p id="playerMeta" class="small" style="margin-top:8px"></p><div id="questionPanel" class="question" style="margin-top:12px"></div><p id="playerStatus" class="status" style="margin-top:10px"></p></div>
 </div>
 <script>
 const views=['home','host','join','lobby','playerGame'];
-let hostSelectedBlook=null,joinSelectedBlook=null,currentHostGameCode=null,lobbyPoll=null,playerPoll=null;
+let joinSelectedBlook=null,currentHostGameCode=null,lobbyPoll=null,playerPoll=null;
 let currentPlayer={code:null,id:null,name:null}; let selectedSetId=null; let selectedCustomSet=null;
 const hostStatus=document.getElementById('hostStatus');const joinStatus=document.getElementById('joinStatus');const startStatus=document.getElementById('startStatus');
+
 function showView(v){views.forEach(id=>document.getElementById(id).classList.toggle('hidden',id!==v));}
 async function api(url,opt){const r=await fetch(url,opt);const d=await r.json();if(!r.ok) throw new Error(d.error||'Request failed');return d;}
-async function loadBlooks(){const data=await api('/api/blooks');for(const [id,onPick] of [['hostBlookGrid',b=>{hostSelectedBlook=b;hostStatus.textContent='Host blook: '+b.name;}],['joinBlookGrid',b=>{joinSelectedBlook=b;joinStatus.textContent='Join blook: '+b.name;}]]){const el=document.getElementById(id);el.innerHTML='';data.blooks.forEach(b=>{const c=document.createElement('div');c.className='blook';c.innerHTML='<img src="'+b.imageUrl+'"/><div>'+b.name+'</div><small>'+b.rarity+'</small>';c.onclick=()=>onPick(b);el.appendChild(c);});}}
-async function searchSets(){const q=document.getElementById('searchSets').value.trim();const data=await api('/api/quiz/search?q='+encodeURIComponent(q));const box=document.getElementById('setResults');box.innerHTML='';data.sets.forEach(set=>{const row=document.createElement('div');row.className='player';row.innerHTML='<span>'+set.title+' <small>('+set.source+')</small></span><button>Select</button>';row.querySelector('button').onclick=()=>{selectedSetId=set.id;selectedCustomSet=null;hostStatus.textContent='Selected set: '+set.title;};box.appendChild(row);});if(!data.sets.length) box.textContent='No sets found.';}
-function parseCustomQuestionLines(raw){const lines=raw.split('\n').map(x=>x.trim()).filter(Boolean);const questions=[];for(const line of lines){const parts=line.split('|');if(parts.length!==6) throw new Error('Each line must have 6 fields separated by |');const [q,a,b,c,d,correctRaw]=parts;const correct=Number(correctRaw);if(!q||[a,b,c,d].some(x=>!x)||!Number.isInteger(correct)||correct<0||correct>3) throw new Error('Bad custom question format.');questions.push({q,answers:[a,b,c,d],correct});}if(!questions.length) throw new Error('Add at least one custom question.');return questions;}
-function saveCustomSet(){try{const title=document.getElementById('customTitle').value.trim();if(!title) throw new Error('Custom title required.');const questions=parseCustomQuestionLines(document.getElementById('customQuestions').value);const payload={title,description:'Saved from browser localStorage',questions};localStorage.setItem('greenit.customSet',JSON.stringify(payload));hostStatus.textContent='Saved custom set locally ✔';}catch(e){hostStatus.textContent=e.message;}}
-function useSavedCustomSet(){try{const raw=localStorage.getItem('greenit.customSet');if(!raw) throw new Error('No saved custom set found.');selectedCustomSet=JSON.parse(raw);selectedSetId=null;hostStatus.textContent='Using local custom set: '+selectedCustomSet.title;}catch(e){hostStatus.textContent=e.message;}}
-async function refreshLobby(){if(!currentHostGameCode)return;const data=await api('/api/games/'+currentHostGameCode+'/lobby');document.getElementById('lobbyCode').textContent=data.game.code;const s=data.game.settings;document.getElementById('lobbyMeta').textContent='Set: '+data.game.setTitle+' | '+data.game.mode+' | '+(s.gameType==='timed'?(s.timeLimitSec+'s timer'):(s.questionLimit+' questions'))+' | Host PIN: '+data.game.hostPin+' | '+data.game.state;const p=document.getElementById('players');p.innerHTML='';data.game.players.forEach(pl=>{const row=document.createElement('div');row.className='player';row.innerHTML='<span>'+pl.playerName+' ('+pl.blook.name+')</span><span class="gold">'+pl.gold+' gold</span>';p.appendChild(row);});if(!data.game.players.length)p.innerHTML='<p>Waiting for players...</p>';if(data.game.state==='live')startStatus.textContent='Live!';}
-async function refreshPlayer(){if(!currentPlayer.code||!currentPlayer.id)return;const data=await api('/api/games/'+currentPlayer.code+'/player/'+currentPlayer.id);let meta=currentPlayer.name+' | Gold: '+(data.gold||0);if(typeof data.remainingSec==='number') meta+=' | ⏱ '+data.remainingSec+'s';document.getElementById('playerMeta').textContent=meta;const panel=document.getElementById('questionPanel');if(data.waiting){panel.innerHTML='<h3>Waiting for host to start...</h3>';return;}if(data.finished){panel.innerHTML='<h3>Done! Final gold: '+data.gold+' | Answered: '+(data.answered||0)+'</h3>';return;}panel.innerHTML='<h3>Q'+(data.questionIndex+1)+': '+data.question.q+'</h3><p class="small">Mode: '+(data.gameType==='timed'?'Time attack':'Question count')+' | Target: '+data.targetQuestions+' questions</p>';data.question.answers.forEach((a,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=a;b.onclick=async()=>{const result=await api('/api/games/'+currentPlayer.code+'/player/'+currentPlayer.id+'/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({answerIndex:i})});document.getElementById('playerStatus').textContent=result.correct?'✅ Correct! +'+result.gained+' gold':'❌ Wrong answer';await refreshPlayer();};panel.appendChild(b);});}
 
-document.getElementById('goHost').onclick=()=>showView('host');document.getElementById('goJoin').onclick=()=>showView('join');document.getElementById('backFromHost').onclick=()=>showView('home');document.getElementById('backFromJoin').onclick=()=>showView('home');
+function prefillJoinCodeFromQuery(){const code=new URLSearchParams(location.search).get('code');if(code){document.getElementById('joinCode').value=code.toUpperCase();}}
+
+async function loadBlooks(){
+  const data=await api('/api/blooks');
+  const el=document.getElementById('joinBlookGrid');el.innerHTML='';
+  data.blooks.forEach(b=>{const c=document.createElement('div');c.className='blook';c.innerHTML=`<img src="${b.imageUrl}"/><div>${b.name}</div><small>${b.rarity}</small>`;c.onclick=()=>{joinSelectedBlook=b;joinStatus.textContent='Selected: '+b.name};el.appendChild(c);});
+}
+
+async function searchSets(){
+  const q=encodeURIComponent(document.getElementById('searchSets').value.trim());
+  const data=await api('/api/quiz/search?q='+q);const root=document.getElementById('setResults');root.innerHTML='';
+  data.sets.forEach(set=>{const row=document.createElement('div');row.className='blook';row.style.marginTop='8px';row.innerHTML=`<strong>${set.title}</strong><br/><small>${set.description} • ${set.source}</small><br/><button class="sub" style="margin-top:8px">Use set</button>`;row.querySelector('button').onclick=()=>{selectedSetId=set.id;selectedCustomSet=null;hostStatus.textContent='Selected set: '+set.title};root.appendChild(row);});
+  if(!data.sets.length) root.innerHTML='<p class="small">No sets found.</p>';
+}
+
+function parseCustomQuestionLines(text){const lines=text.split('\n').map(x=>x.trim()).filter(Boolean);const questions=[];lines.forEach(line=>{const parts=line.split('|').map(x=>x.trim());if(parts.length!==6) throw new Error('Each custom line needs 6 fields.');const [q,a,b,c,d,raw]=parts;const correct=Number(raw);if(!q||[a,b,c,d].some(x=>!x)||!Number.isInteger(correct)||correct<0||correct>3) throw new Error('Bad custom line format.');questions.push({q,answers:[a,b,c,d],correct});});if(!questions.length) throw new Error('Add at least one custom question.');return questions;}
+function saveCustomSet(){try{const title=document.getElementById('customTitle').value.trim();if(!title) throw new Error('Custom title required.');const questions=parseCustomQuestionLines(document.getElementById('customQuestions').value);localStorage.setItem('greenit.customSet',JSON.stringify({title,description:'Saved in browser',questions}));hostStatus.textContent='Saved custom set.';}catch(e){hostStatus.textContent=e.message;}}
+function useSavedCustomSet(){try{const raw=localStorage.getItem('greenit.customSet');if(!raw) throw new Error('No saved custom set.');selectedCustomSet=JSON.parse(raw);selectedSetId=null;hostStatus.textContent='Using custom set: '+selectedCustomSet.title;}catch(e){hostStatus.textContent=e.message;}}
+
+function renderJoinQr(code){
+  const joinUrl=`${location.origin}/?code=${encodeURIComponent(code)}`;
+  document.getElementById('joinUrlText').textContent=joinUrl;
+  const qrSrc=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(joinUrl)}`;
+  document.getElementById('qrWrap').innerHTML=`<div class="qr"><img src="${qrSrc}" width="200" height="200" alt="join qr"/></div>`;
+}
+
+async function kickPlayer(playerId){try{await api('/api/games/'+currentHostGameCode+'/kick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerId})});await refreshLobby();}catch(e){startStatus.textContent=e.message;}}
+
+async function refreshLobby(){
+  if(!currentHostGameCode)return;
+  const data=await api('/api/games/'+currentHostGameCode+'/lobby');
+  document.getElementById('lobbyCode').textContent=data.game.code;renderJoinQr(data.game.code);
+  const s=data.game.settings;document.getElementById('lobbyMeta').textContent=`${data.game.mode} • ${data.game.setTitle} • PIN ${data.game.hostPin} • ${s.gameType==='timed'?(s.timeLimitSec+'s timer'):(s.questionLimit+' questions')} • ${data.game.state}`;
+  const p=document.getElementById('players');p.innerHTML='';
+  [...data.game.players].sort((a,b)=>b.gold-a.gold).forEach((pl,i)=>{const row=document.createElement('div');row.className='player';row.innerHTML=`<span>#${i+1} <img src="${pl.blook.imageUrl}" width="24" height="24" style="vertical-align:middle;border-radius:6px;margin-right:6px"/> ${pl.playerName} (${pl.blook.name})</span><span class="gold">${pl.gold} gold <button class="warn kick">Kick</button></span>`;row.querySelector('button').onclick=()=>kickPlayer(pl.playerId);p.appendChild(row);});
+  if(!data.game.players.length)p.innerHTML='<p class="small">Waiting for players...</p>';
+  const feed=document.getElementById('eventFeed');feed.innerHTML='';(data.game.eventLog||[]).slice().reverse().forEach(ev=>{const row=document.createElement('div');row.className='event';row.innerHTML=`<div>${ev.text}</div><div class="small">${new Date(ev.at).toLocaleTimeString()}</div>`;feed.appendChild(row);});
+  if(!(data.game.eventLog||[]).length)feed.innerHTML='<div class="event"><span class="small">No events yet.</span></div>';
+  if(data.game.state==='ended')startStatus.textContent='Game ended for everyone.';
+}
+
+async function refreshPlayer(){
+  if(!currentPlayer.code||!currentPlayer.id)return;
+  try{
+    const data=await api('/api/games/'+currentPlayer.code+'/player/'+currentPlayer.id);
+    let meta=currentPlayer.name+' • Gold: '+(data.gold||0);if(typeof data.remainingSec==='number')meta+=' • ⏱ '+data.remainingSec+'s';document.getElementById('playerMeta').textContent=meta;
+    const panel=document.getElementById('questionPanel');
+    if(data.ended){panel.innerHTML='<h3>Host ended the game.</h3>';if(playerPoll){clearInterval(playerPoll);playerPoll=null;}return;}
+    if(data.waiting){panel.innerHTML='<h3>Waiting for host to start...</h3>';return;}
+    if(data.finished){panel.innerHTML='<h3>Done! Final gold: '+data.gold+'</h3><p class="small">Answered: '+(data.answered||0)+'</p>';if(playerPoll){clearInterval(playerPoll);playerPoll=null;}return;}
+    panel.innerHTML='<h3>Q'+(data.questionIndex+1)+': '+data.question.q+'</h3><p class="small">'+(data.gameType==='timed'?'Time attack':'Gold Quest')+' • target '+data.targetQuestions+'</p>';
+    data.question.answers.forEach((a,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=a;b.onclick=async()=>{try{const r=await api('/api/games/'+currentPlayer.code+'/player/'+currentPlayer.id+'/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({answerIndex:i})});document.getElementById('playerStatus').textContent=r.correct?('✅ Correct! +'+r.gained+' gold'+(r.chest?(' | 🎁 '+r.chest.text):'')):'❌ Wrong answer';await refreshPlayer();}catch(e){document.getElementById('playerStatus').textContent=e.message;}};panel.appendChild(b);});
+  }catch(e){document.getElementById('questionPanel').innerHTML='<h3>'+e.message+'</h3>';if(playerPoll){clearInterval(playerPoll);playerPoll=null;}}
+}
+
+document.getElementById('goHost').onclick=()=>showView('host');document.getElementById('goJoin').onclick=()=>showView('join');
+document.getElementById('backFromHost').onclick=()=>showView('home');document.getElementById('backFromJoin').onclick=()=>showView('home');
 document.getElementById('runSearch').onclick=searchSets;document.getElementById('saveCustom').onclick=saveCustomSet;document.getElementById('loadCustom').onclick=useSavedCustomSet;
-document.getElementById('createHostLobby').onclick=async()=>{try{if(!hostSelectedBlook)throw new Error('Pick a host blook.');if(!selectedSetId&&!selectedCustomSet)throw new Error('Select a set or load your custom set.');const gameType=document.getElementById('gameType').value;const questionLimit=Number(document.getElementById('questionLimit').value||30);const timeLimitSec=Number(document.getElementById('timeLimit').value||120);const body={setId:selectedSetId,customSet:selectedCustomSet,hostBlook:hostSelectedBlook,gameType,questionLimit,timeLimitSec};const data=await api('/api/host',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});currentHostGameCode=data.game.code;showView('lobby');startStatus.textContent='Lobby ready. Players wait until start.';await refreshLobby();if(lobbyPoll)clearInterval(lobbyPoll);lobbyPoll=setInterval(refreshLobby,1500);}catch(e){hostStatus.textContent=e.message;}};
-document.getElementById('joinLobby').onclick=async()=>{try{const code=document.getElementById('joinCode').value.trim().toUpperCase();const name=document.getElementById('joinName').value.trim();if(!joinSelectedBlook)throw new Error('Pick a blook to join.');const data=await api('/api/games/'+code+'/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerName:name,blook:joinSelectedBlook})});currentPlayer={code,id:data.player.playerId,name:data.player.playerName};showView('playerGame');joinStatus.textContent='';await refreshPlayer();if(playerPoll)clearInterval(playerPoll);playerPoll=setInterval(refreshPlayer,1200);}catch(e){joinStatus.textContent=e.message;}};
+document.getElementById('createHostLobby').onclick=async()=>{try{if(!selectedSetId&&!selectedCustomSet)throw new Error('Select a set or custom set.');const body={setId:selectedSetId,customSet:selectedCustomSet,gameType:document.getElementById('gameType').value,questionLimit:Number(document.getElementById('questionLimit').value||20),timeLimitSec:Number(document.getElementById('timeLimit').value||120)};const data=await api('/api/host',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});currentHostGameCode=data.game.code;showView('lobby');startStatus.textContent='Lobby ready.';await refreshLobby();if(lobbyPoll)clearInterval(lobbyPoll);lobbyPoll=setInterval(refreshLobby,1500);}catch(e){hostStatus.textContent=e.message;}};
+document.getElementById('joinLobby').onclick=async()=>{try{const code=document.getElementById('joinCode').value.trim().toUpperCase();const name=document.getElementById('joinName').value.trim();if(!joinSelectedBlook)throw new Error('Pick a character to join.');const data=await api('/api/games/'+code+'/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerName:name,blook:joinSelectedBlook})});currentPlayer={code,id:data.player.playerId,name:data.player.playerName};showView('playerGame');await refreshPlayer();if(playerPoll)clearInterval(playerPoll);playerPoll=setInterval(refreshPlayer,1200);}catch(e){joinStatus.textContent=e.message;}};
 document.getElementById('startGame').onclick=async()=>{try{const data=await api('/api/games/'+currentHostGameCode+'/start',{method:'POST'});startStatus.textContent=data.message;await refreshLobby();}catch(e){startStatus.textContent=e.message;}};
+document.getElementById('endGame').onclick=async()=>{try{const data=await api('/api/games/'+currentHostGameCode+'/end',{method:'POST'});startStatus.textContent=data.message;await refreshLobby();}catch(e){startStatus.textContent=e.message;}};
 document.getElementById('closeLobby').onclick=async()=>{if(!currentHostGameCode)return showView('home');await fetch('/api/games/'+currentHostGameCode,{method:'DELETE'});currentHostGameCode=null;if(lobbyPoll)clearInterval(lobbyPoll);showView('home');};
-loadBlooks();searchSets();
-</script></body></html>
+loadBlooks();searchSets();prefillJoinCodeFromQuery();
+</script>
+</body>
+</html>
