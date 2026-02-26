@@ -41,10 +41,13 @@ const fallbackSets = [
 ];
 
 const remoteTopics = [
-  { id: 'remote-general-30', title: 'General Knowledge (30)', category: 9 },
-  { id: 'remote-science-30', title: 'Science & Nature (30)', category: 17 },
-  { id: 'remote-history-30', title: 'History (30)', category: 23 },
-  { id: 'remote-math-30', title: 'Math (30)', category: 19 },
+  { id: 'opentdb-general-30', title: 'General Knowledge (OpenTDB)', provider: 'opentdb', category: 9 },
+  { id: 'opentdb-science-30', title: 'Science & Nature (OpenTDB)', provider: 'opentdb', category: 17 },
+  { id: 'opentdb-history-30', title: 'History (OpenTDB)', provider: 'opentdb', category: 23 },
+  { id: 'opentdb-math-30', title: 'Math (OpenTDB)', provider: 'opentdb', category: 19 },
+  { id: 'triviaapi-mixed-20', title: 'Mixed Trivia (The Trivia API)', provider: 'thetriviaapi', limit: 20 },
+  { id: 'triviaapi-film-20', title: 'Film & TV (The Trivia API)', provider: 'thetriviaapi', categories: 'film_and_tv', limit: 20 },
+  { id: 'jservice-random-25', title: 'Random Jeopardy! clues (jService)', provider: 'jservice', limit: 25 },
 ];
 
 const remoteSetCache = new Map();
@@ -115,6 +118,10 @@ function shuffle(arr) {
   return copy;
 }
 
+function sample(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 function fetchJson(url) {
   return new Promise((resolve, reject) => {
     https
@@ -138,24 +145,80 @@ async function getRemoteSet(id) {
   const topic = remoteTopics.find((t) => t.id === id);
   if (!topic) return null;
 
-  const remote = await fetchJson(`https://opentdb.com/api.php?amount=30&type=multiple&category=${topic.category}`);
-  if (!Array.isArray(remote?.results) || !remote.results.length) return null;
+  let questions = [];
+  let source = 'Open Trivia DB';
 
-  const questions = remote.results.map((item) => {
-    const correctAnswer = decodeHtmlEntities(item.correct_answer);
-    const answers = shuffle([correctAnswer, ...item.incorrect_answers.map(decodeHtmlEntities)]);
-    return {
-      q: decodeHtmlEntities(item.question),
-      answers,
-      correct: answers.indexOf(correctAnswer),
-    };
-  });
+  if (topic.provider === 'opentdb') {
+    const remote = await fetchJson(`https://opentdb.com/api.php?amount=30&type=multiple&category=${topic.category}`);
+    if (!Array.isArray(remote?.results) || !remote.results.length) return null;
+    questions = remote.results.map((item) => {
+      const correctAnswer = decodeHtmlEntities(item.correct_answer);
+      const answers = shuffle([correctAnswer, ...item.incorrect_answers.map(decodeHtmlEntities)]);
+      return {
+        q: decodeHtmlEntities(item.question),
+        answers,
+        correct: answers.indexOf(correctAnswer),
+      };
+    });
+  } else if (topic.provider === 'thetriviaapi') {
+    source = 'The Trivia API';
+    const params = new URLSearchParams({
+      limit: String(topic.limit || 20),
+      region: 'US',
+      difficulty: 'easy,medium',
+    });
+    if (topic.categories) params.set('categories', topic.categories);
+    const remote = await fetchJson(`https://the-trivia-api.com/v2/questions?${params.toString()}`);
+    if (!Array.isArray(remote) || !remote.length) return null;
+    questions = remote
+      .map((item) => {
+        const allAnswers = [...(item.incorrectAnswers || []), item.correctAnswer].map(decodeHtmlEntities).filter(Boolean);
+        if (allAnswers.length !== 4) return null;
+        const shuffled = shuffle(allAnswers);
+        const correctAnswer = decodeHtmlEntities(item.correctAnswer);
+        return {
+          q: decodeHtmlEntities(item.question?.text || item.question),
+          answers: shuffled,
+          correct: shuffled.indexOf(correctAnswer),
+        };
+      })
+      .filter(Boolean);
+  } else if (topic.provider === 'jservice') {
+    source = 'jService';
+    const remote = await fetchJson(`https://jservice.io/api/random?count=${topic.limit || 25}`);
+    if (!Array.isArray(remote) || !remote.length) return null;
+    questions = remote
+      .map((item) => {
+        const answer = decodeHtmlEntities(item.answer).replace(/(<([^>]+)>)/gi, '').trim();
+        const clue = decodeHtmlEntities(item.question).trim();
+        if (!answer || !clue) return null;
+        const decoys = shuffle([
+          'Not enough info',
+          'Unknown',
+          'True',
+          'False',
+          'All of the above',
+          'None of the above',
+          'A',
+          'B',
+        ]).slice(0, 3);
+        const answers = shuffle([answer, ...decoys]);
+        return {
+          q: clue,
+          answers,
+          correct: answers.indexOf(answer),
+        };
+      })
+      .filter(Boolean);
+  }
+
+  if (!questions.length) return null;
 
   const set = {
     id,
     title: topic.title,
-    description: 'Loaded from Open Trivia DB',
-    source: 'Open Trivia DB',
+    description: `Loaded from ${source}`,
+    source,
     questions,
   };
   remoteSetCache.set(id, set);
@@ -173,9 +236,9 @@ async function searchQuizSets(query) {
     .map((t) => ({
       id: t.id,
       title: t.title,
-      description: '30-question pack from Open Trivia DB',
-      source: 'Open Trivia DB',
-      questionCount: 30,
+      description: `Remote set from ${t.provider}`,
+      source: t.provider,
+      questionCount: t.limit || 30,
     }));
 
   return [...topicMatches, ...localMatches];
@@ -193,7 +256,6 @@ function validateQuestions(questions) {
 
 function validateHostPayload(body) {
   if (!body || typeof body !== 'object') return 'Expected request body object.';
-  if (!body.hostBlook?.name || !body.hostBlook?.imageUrl) return 'Host blook is required.';
   if (!body.setId && !body.customSet) return 'Choose or create a game set first.';
   if (body.customSet) {
     if (!body.customSet.title || typeof body.customSet.title !== 'string') return 'Custom set title is required.';
@@ -228,7 +290,7 @@ async function resolveSet({ setId, customSet }) {
   return fallbackSets.find((s) => s.id === setId) || fallbackSets[0];
 }
 
-async function createHostedGame({ setId, hostBlook, customSet, gameType, questionLimit, timeLimitSec }) {
+async function createHostedGame({ setId, customSet, gameType, questionLimit, timeLimitSec }) {
   const selected = await resolveSet({ setId, customSet });
   let code;
   do code = randomCode(); while (games.has(code));
@@ -244,17 +306,46 @@ async function createHostedGame({ setId, hostBlook, customSet, gameType, questio
     code,
     hostPin: randomHostPin(),
     mode: modeSettings.gameType === 'timed' ? 'Time Attack' : 'Gold Quest',
-    hostBlook,
     set: selected,
     state: 'lobby',
     settings: modeSettings,
     createdAt: now,
     startedAt: null,
     endsAt: null,
+    endedAt: null,
+    eventLog: [],
     players: [],
   };
   games.set(code, game);
   return game;
+}
+
+function chestEvent(game, player) {
+  if (!game.players.length) return null;
+  const opponents = game.players.filter((p) => p.playerId !== player.playerId);
+  const target = opponents.length ? sample(opponents) : null;
+  const roll = Math.random();
+  if (!target || roll < 0.35) {
+    const bonus = Math.floor(35 + Math.random() * 61);
+    player.gold += bonus;
+    return { type: 'bonus', text: `${player.playerName} found ${bonus} gold in a chest!` };
+  }
+  if (roll < 0.65) {
+    const steal = Math.min(target.gold, Math.floor(20 + Math.random() * 80));
+    target.gold -= steal;
+    player.gold += steal;
+    return { type: 'steal', text: `${player.playerName} stole ${steal} gold from ${target.playerName}!`, target: target.playerName };
+  }
+
+  const original = player.gold;
+  player.gold = target.gold;
+  target.gold = original;
+  return {
+    type: 'swap',
+    text: `${player.playerName} swapped gold totals with ${target.playerName}!`,
+    target: target.playerName,
+    newGold: player.gold,
+  };
 }
 
 function publicGame(game) {
@@ -266,6 +357,7 @@ function publicGame(game) {
     setTitle: game.set.title,
     settings: game.settings,
     players: game.players.map((p) => ({ playerId: p.playerId, playerName: p.playerName, blook: p.blook, gold: p.gold, answered: p.questionIndex })),
+    eventLog: game.eventLog.slice(-8),
   };
 }
 
@@ -343,12 +435,48 @@ function routes(req, res) {
     return sendJson(res, 200, { message: 'Game started! Players now see questions.' });
   }
 
+
+  if (req.method === 'POST' && pathname.match(/^\/api\/games\/[^/]+\/kick$/)) {
+    const code = pathname.split('/')[3]?.toUpperCase();
+    const game = code ? games.get(code) : null;
+    if (!game) return sendJson(res, 404, { error: 'Game not found' });
+
+    parseBody(req)
+      .then((body) => {
+        const targetId = String(body.playerId || '');
+        if (!targetId) return sendJson(res, 400, { error: 'playerId is required.' });
+        const idx = game.players.findIndex((p) => p.playerId === targetId);
+        if (idx < 0) return sendJson(res, 404, { error: 'Player not found' });
+        const [removed] = game.players.splice(idx, 1);
+        game.eventLog.push({ at: new Date().toISOString(), type: 'kick', text: `${removed.playerName} was kicked by host.` });
+        sendJson(res, 200, { message: 'Player kicked.', playerId: removed.playerId });
+      })
+      .catch((error) => sendJson(res, 400, { error: error.message || 'Unable to parse request' }));
+    return;
+  }
+
+  if (req.method === 'POST' && pathname.match(/^\/api\/games\/[^/]+\/end$/)) {
+    const code = pathname.split('/')[3]?.toUpperCase();
+    const game = code ? games.get(code) : null;
+    if (!game) return sendJson(res, 404, { error: 'Game not found' });
+    if (game.state === 'ended') return sendJson(res, 200, { message: 'Game already ended.' });
+
+    game.state = 'ended';
+    game.endedAt = new Date().toISOString();
+    game.eventLog.push({ at: game.endedAt, type: 'ended', text: 'Host ended the game for everyone.' });
+    return sendJson(res, 200, { message: 'Game ended for all players.' });
+  }
+
   if (req.method === 'GET' && pathname.match(/^\/api\/games\/[^/]+\/player\/[^/]+$/)) {
     const [, , , codeRaw, , playerId] = pathname.split('/');
     const game = games.get((codeRaw || '').toUpperCase());
     if (!game) return sendJson(res, 404, { error: 'Game not found' });
     const player = game.players.find((p) => p.playerId === playerId);
     if (!player) return sendJson(res, 404, { error: 'Player not found' });
+
+    if (game.state === 'ended') {
+      return sendJson(res, 200, { state: 'ended', ended: true, gold: player.gold, playerName: player.playerName, message: 'Host ended the game.' });
+    }
 
     if (game.state !== 'live') {
       return sendJson(res, 200, { state: game.state, waiting: true, gold: player.gold, playerName: player.playerName });
@@ -380,6 +508,7 @@ function routes(req, res) {
     if (!game) return sendJson(res, 404, { error: 'Game not found' });
     const player = game.players.find((p) => p.playerId === playerId);
     if (!player) return sendJson(res, 404, { error: 'Player not found' });
+    if (game.state === 'ended') return sendJson(res, 410, { error: 'Game ended by host.' });
     if (game.state !== 'live') return sendJson(res, 400, { error: 'Game has not started.' });
 
     parseBody(req)
@@ -394,13 +523,18 @@ function routes(req, res) {
 
         const correct = index === question.correct;
         let gained = 0;
+        let chest = null;
         if (correct) {
           gained = timed ? Math.floor(15 + Math.random() * 31) : Math.floor(20 + Math.random() * 61);
           player.gold += gained;
+          chest = chestEvent(game, player);
+          if (chest) {
+            game.eventLog.push({ at: new Date().toISOString(), ...chest });
+          }
         }
         player.questionIndex += 1;
 
-        sendJson(res, 200, { correct, gained, totalGold: player.gold, nextQuestion: player.questionIndex, remainingSec });
+        sendJson(res, 200, { correct, gained, totalGold: player.gold, chest, nextQuestion: player.questionIndex, remainingSec });
       })
       .catch((error) => sendJson(res, 400, { error: error.message || 'Unable to parse request' }));
     return;
