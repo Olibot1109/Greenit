@@ -6,7 +6,7 @@ const { URL } = require('url');
 
 const PORT = process.env.PORT || 3000;
 const HTML_PAGE = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-
+const HTML_JS = fs.readFileSync(path.join(__dirname, 'script.js'), 'utf8');
 const blookSeeds = [
   'Nova',
   'Atlas',
@@ -2245,8 +2245,8 @@ function routes(req, res) {
   res.on('finish', () => finishLog('finish'));
   res.on('close', () => finishLog('close'));
 
-  if (req.method === 'GET' && pathname === '/index.html') {
-    return sendText(res, 200, HTML_PAGE, 'text/html; charset=utf-8');
+  if (req.method === 'GET' && pathname === '/script.js') {
+    return sendText(res, 200, HTML_JS, 'text/javascript; charset=utf-8');
   }
 
   if (req.method === 'GET' && pathname === '/') {
