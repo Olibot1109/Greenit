@@ -5,151 +5,2901 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Greenit</title>
   <style>
-    :root{--bg:#2242b8;--bg2:#1b2f88;--card:#fff;--line:#d7def9;--text:#1c2452;--muted:#56619c;--gold:#bb7d00}
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text)}
-    .wrap{max-width:1120px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-    .title{font-size:30px;font-weight:900;color:#fff}.tag{font-size:12px;font-weight:700;color:#fff;background:#ef4d73;padding:7px 11px;border-radius:999px}
-    .card{background:var(--card);border:3px solid #edf1ff;border-radius:16px;box-shadow:0 8px 0 rgba(0,0,0,.2);padding:16px;margin-top:12px}
-    .hidden{display:none}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.stack{display:grid;gap:10px}
-    .columns{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}.hostgrid{display:grid;grid-template-columns:1.5fr .9fr;gap:14px}
-    button{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;color:#fff;background:#3a62ff}button.alt{background:#6e53d9}button.warn{background:#e9486e}button.sub{background:#29a3e6}
-    input,select,textarea{border:2px solid var(--line);border-radius:10px;padding:10px;background:#f7f9ff;color:#1f2b66}textarea{width:100%;min-height:84px}
-    .small{font-size:13px;color:var(--muted)}.status{min-height:20px;color:#2d3f97}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
-    .blook{border:2px solid var(--line);border-radius:10px;padding:9px;text-align:center;background:#f7f9ff;cursor:pointer}.blook img{height:54px}
-    .player{display:flex;justify-content:space-between;gap:8px;padding:10px;border-bottom:1px solid #e7ecff}.player:last-child{border-bottom:0}
-    .gold{color:var(--gold);font-weight:700}.kick{padding:6px 8px;font-size:12px}
-    .event-feed{border:2px solid var(--line);border-radius:10px;max-height:230px;overflow:auto}.event{padding:9px;border-bottom:1px solid #ecf1ff}.event:last-child{border-bottom:0}
-    .question{border:2px solid var(--line);border-radius:10px;background:#f8faff;padding:12px}.answer{width:100%;text-align:left;margin-top:8px;background:#2f9ee0}
-    .qr{border:2px solid var(--line);border-radius:10px;padding:8px;display:inline-block;background:#fff}
-    @media (max-width:900px){.columns,.hostgrid{grid-template-columns:1fr}}
+    @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800;900&display=swap');
+
+    :root {
+      --purple: #a057bf;
+      --purple-dark: #7e3d9b;
+      --aqua: #1fc6d8;
+      --aqua-dark: #149db5;
+      --ink: #1a2a43;
+      --wood-1: #be5a2f;
+      --wood-2: #a84c27;
+      --white: #ffffff;
+      --shadow: 0 8px 0 rgba(0, 0, 0, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Nunito", sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #20c5d5 0%, #1fbad2 48%, #43b8da 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 15% 85%, rgba(255, 255, 255, 0.11) 0 15%, transparent 16%),
+        radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.1) 0 13%, transparent 14%),
+        radial-gradient(circle at 55% 60%, rgba(255, 255, 255, 0.07) 0 18%, transparent 19%);
+      opacity: 0.8;
+      z-index: -2;
+    }
+
+    .app {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .screen {
+      margin-top: 14px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .panel {
+      border-radius: 16px;
+      border: 4px solid rgba(255, 255, 255, 0.65);
+      background: rgba(241, 251, 255, 0.97);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .brand-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      border-radius: 12px;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      color: #fff;
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .title {
+      margin: 0;
+      font-family: "Baloo 2", cursive;
+      letter-spacing: 0.3px;
+      line-height: 1;
+      font-size: clamp(2rem, 4.2vw, 3.4rem);
+    }
+
+    .tag {
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      display: none;
+    }
+
+    h2,
+    h3 {
+      margin: 0;
+      font-family: "Baloo 2", cursive;
+      line-height: 1.1;
+      letter-spacing: 0.3px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .columns {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1.35fr 1fr;
+      margin-top: 10px;
+      align-items: start;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 15px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 900;
+      font-family: "Nunito", sans-serif;
+      background: linear-gradient(180deg, #3d70f8 0%, #2f56c7 100%);
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+      transition: transform 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    button.alt {
+      background: linear-gradient(180deg, #6670e7 0%, #5259b6 100%);
+    }
+
+    button.warn {
+      background: linear-gradient(180deg, #e55364 0%, #b42f47 100%);
+    }
+
+    button.sub {
+      background: linear-gradient(180deg, #29b6e8 0%, #178cb8 100%);
+    }
+
+    button.ghost {
+      background: linear-gradient(180deg, #8e95b3 0%, #69708a 100%);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 2px solid #cae8f4;
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px 12px;
+      color: #15314f;
+      font-size: 0.95rem;
+      font-family: "Nunito", sans-serif;
+    }
+
+    textarea {
+      min-height: 86px;
+      resize: vertical;
+    }
+
+    .small {
+      color: #395f7d;
+      font-size: 0.88rem;
+    }
+
+    .status {
+      min-height: 22px;
+      margin: 8px 0 0;
+      font-weight: 700;
+      color: #1f4f72;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .avatar {
+      border: 2px solid #c5e8f5;
+      border-radius: 12px;
+      background: #fff;
+      text-align: center;
+      padding: 9px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12);
+      transition: transform 0.12s ease, border-color 0.12s ease;
+    }
+
+    .avatar img {
+      width: 54px;
+      height: 54px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .avatar:hover {
+      transform: translateY(-1px);
+      border-color: #5ac4e2;
+    }
+
+    .avatar.selected {
+      border-color: #1e9bc2;
+      background: #ecfbff;
+    }
+
+    .avatar.is-taken {
+      opacity: 0.45;
+      filter: grayscale(0.65);
+      cursor: not-allowed;
+      transform: none;
+      border-color: #b8c6cf;
+    }
+
+    .avatar.is-current {
+      border-color: #1a9e5f;
+      background: #e9fff3;
+    }
+
+    .wait-pick-wrap {
+      width: 100%;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .wait-pick-head {
+      text-align: center;
+      color: #284a66;
+      font-weight: 900;
+      font-size: clamp(1.1rem, 2vw, 1.9rem);
+    }
+
+    .custom-editor {
+      border: 2px solid #c3e5f2;
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.85);
+      display: grid;
+      gap: 10px;
+    }
+
+    .custom-list {
+      display: grid;
+      gap: 8px;
+      max-height: 240px;
+      overflow: auto;
+    }
+
+    .custom-item {
+      border: 1px solid #c8e2ef;
+      background: #fff;
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .custom-item-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .custom-item-title {
+      font-weight: 800;
+      color: #23415d;
+    }
+
+    .custom-item-meta {
+      font-size: 0.78rem;
+      color: #3b6382;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .set-results {
+      display: grid;
+      gap: 8px;
+      max-height: 54vh;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .generated-sets {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .set-card {
+      border: 2px solid #c3e5f2;
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px;
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1);
+    }
+
+    .set-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .set-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .set-title {
+      font-weight: 900;
+      color: #27415f;
+    }
+
+    .set-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      background: #eaf7ff;
+      color: #2c5f87;
+      border: 1px solid #b9dff3;
+      padding: 3px 8px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+
+    .set-preview-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .set-preview-list {
+      display: grid;
+      gap: 8px;
+      max-height: 340px;
+      overflow: auto;
+    }
+
+    .preview-item {
+      border: 1px solid #c8e2ef;
+      background: #fff;
+      border-radius: 10px;
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .preview-image {
+      width: min(260px, 100%);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #d4e8f2;
+      background: #e8f3f9;
+    }
+
+    .preview-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      max-height: 130px;
+    }
+
+    .preview-question {
+      font-weight: 800;
+      color: #27415f;
+    }
+
+    .preview-answers {
+      display: grid;
+      gap: 4px;
+    }
+
+    .preview-answer {
+      border: 1px solid #d4e8f2;
+      border-radius: 8px;
+      background: #f8fdff;
+      color: #36556f;
+      padding: 5px 8px;
+      font-size: 0.86rem;
+    }
+
+    .preview-answer.is-correct {
+      border-color: #79c89b;
+      background: #e8fff1;
+      color: #206341;
+      font-weight: 800;
+    }
+
+    .quick-search {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .quick-btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #e3f4ff;
+      color: #245372;
+      font-size: 0.8rem;
+      font-weight: 800;
+      box-shadow: none;
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .check-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      color: #23415d;
+    }
+
+    .check-line input[type="checkbox"] {
+      width: auto;
+      transform: scale(1.15);
+    }
+
+    #lobby {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      padding: 0;
+      margin-top: 12px;
+    }
+
+    .waiting-header,
+    .live-header {
+      border-radius: 14px;
+      color: #fff;
+      margin-bottom: 8px;
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .waiting-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 20px;
+    }
+
+    .qr-wrap {
+      border: 4px solid rgba(255, 255, 255, 0.45);
+      border-radius: 12px;
+      width: fit-content;
+      background: #fff;
+      min-width: 84px;
+      min-height: 84px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .invite-text {
+      font-size: clamp(1rem, 1.7vw, 2rem);
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .invite-text strong {
+      text-decoration: underline;
+    }
+
+    .code-big {
+      display: block;
+      font-family: "Baloo 2", cursive;
+      font-size: clamp(2.4rem, 7vw, 6.2rem);
+      line-height: 0.95;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #fff;
+      text-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .copy-link {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      box-shadow: none;
+      font-size: 0.85rem;
+      line-height: 1.2;
+    }
+
+    .join-url {
+      color: rgba(255, 255, 255, 0.95);
+      font-weight: 700;
+      text-decoration: underline;
+      display: inline-block;
+      margin: 0 0 8px 4px;
+      word-break: break-all;
+      font-size: 0.9rem;
+    }
+
+    .live-header {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      font-family: "Baloo 2", cursive;
+      font-size: clamp(1.1rem, 2vw, 2rem);
+      font-weight: 700;
+    }
+
+    .hud-clock {
+      letter-spacing: 1px;
+    }
+
+    .lobby-stage {
+      border-radius: 16px;
+      border: 4px solid rgba(255, 255, 255, 0.7);
+      background: linear-gradient(180deg, #22bfd2 0%, #27bfd6 68%, #5cb8df 100%);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .lobby-stage-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .players-badge {
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 900;
+      background: rgba(0, 0, 0, 0.17);
+      border-radius: 999px;
+      padding: 7px 12px;
+      min-width: 95px;
+      text-align: center;
+    }
+
+    .mode-title {
+      color: #fff;
+      font-size: clamp(2rem, 4vw, 4.7rem);
+      text-shadow: 0 4px 0 rgba(0, 0, 0, 0.16);
+      text-align: center;
+      flex: 1;
+    }
+
+    .start-btn {
+      background: linear-gradient(180deg, #fff 0%, #eceef4 100%);
+      color: #222f41;
+      font-size: 1.3rem;
+      border-radius: 14px;
+      border: 3px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25);
+      padding: 10px 18px;
+    }
+
+    .host-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .host-panel {
+      border-radius: 14px;
+      padding: 12px;
+      border: 3px solid rgba(255, 255, 255, 0.42);
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .host-panel h3 {
+      color: #fff;
+      font-size: 1.8rem;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, 0.16);
+      margin-bottom: 8px;
+    }
+
+    #players {
+      display: grid;
+      gap: 10px;
+    }
+
+    .player-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 66px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 800;
+    }
+
+    .player-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .player-main img {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: rgba(255, 255, 255, 0.8);
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      flex-shrink: 0;
+    }
+
+    .player-name {
+      font-size: clamp(1.15rem, 2.5vw, 2.3rem);
+      line-height: 1;
+      color: #2d2f43;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-card {
+      border: 3px solid rgba(255, 255, 255, 0.7);
+      background: linear-gradient(180deg, #fefefe 0%, #eceff4 100%);
+      box-shadow: 0 5px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .player-side {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .gold-chip {
+      background: #f7df7a;
+      color: #7f5a00;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.95rem;
+      min-width: 50px;
+      text-align: center;
+      border: 2px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .kick {
+      font-size: 0.78rem;
+      padding: 6px 9px;
+    }
+
+    .leader-row {
+      color: #fff;
+      border: 2px solid rgba(61, 19, 3, 0.44);
+      background:
+        radial-gradient(140% 80% at 0% 50%, rgba(255, 255, 255, 0.05) 0 30%, transparent 31%),
+        repeating-linear-gradient(
+          0deg,
+          rgba(188, 80, 42, 0.98) 0 12px,
+          rgba(171, 67, 35, 0.98) 12px 24px
+        );
+      border-radius: 0;
+      min-height: 74px;
+      box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.14);
+    }
+
+    .rank {
+      min-width: 68px;
+      font-size: 1.95rem;
+      font-family: "Baloo 2", cursive;
+      line-height: 1;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
+    }
+
+    .leader-name {
+      color: #fff;
+      font-size: clamp(1.6rem, 2.8vw, 2.6rem);
+      line-height: 1;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+    }
+
+    .leader-score {
+      font-size: 2rem;
+      font-family: "Baloo 2", cursive;
+      line-height: 1;
+      color: #fff;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+      min-width: 42px;
+      text-align: right;
+    }
+
+    .event-feed {
+      border: 2px solid rgba(76, 25, 8, 0.45);
+      border-radius: 0;
+      overflow: auto;
+      max-height: 520px;
+      background:
+        radial-gradient(130% 80% at 0% 50%, rgba(255, 255, 255, 0.05) 0 30%, transparent 31%),
+        repeating-linear-gradient(
+          0deg,
+          rgba(188, 80, 42, 0.98) 0 12px,
+          rgba(171, 67, 35, 0.98) 12px 24px
+        );
+      color: #fff;
+      padding: 8px;
+    }
+
+    .event {
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 1.05rem;
+      line-height: 1.25;
+      color: #ffe9d5;
+    }
+
+    .event:last-child {
+      border-bottom: 0;
+    }
+
+    .event .small {
+      color: rgba(255, 240, 228, 0.85);
+    }
+
+    .host-actions {
+      margin-top: 10px;
+      justify-content: flex-end;
+    }
+
+    #lobbyMeta {
+      display: none;
+    }
+
+    #startStatus {
+      color: #fff;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.14);
+      margin-top: 8px;
+    }
+
+    #lobby[data-phase="lobby"] .live-header,
+    #lobby[data-phase="lobby"] #eventsPanel {
+      display: none;
+    }
+
+    #lobby[data-phase="lobby"] .host-grid {
+      grid-template-columns: 1fr;
+    }
+
+    #lobby[data-phase="lobby"] #players {
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    #lobby[data-phase="lobby"] #playersPanel {
+      border: 0;
+      background: transparent;
+      padding: 0;
+    }
+
+    #lobby[data-phase="lobby"] #playersTitle {
+      display: none;
+    }
+
+    #lobby[data-phase="live"] .waiting-header,
+    #lobby[data-phase="live"] .join-url,
+    #lobby[data-phase="ended"] .waiting-header,
+    #lobby[data-phase="ended"] .join-url {
+      display: none;
+    }
+
+    #lobby[data-phase="live"] .live-header,
+    #lobby[data-phase="ended"] .live-header {
+      display: flex;
+    }
+
+    #lobby[data-phase="live"] .host-grid,
+    #lobby[data-phase="ended"] .host-grid {
+      grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+      align-items: start;
+      gap: 12px;
+    }
+
+    #lobby[data-phase="live"] #players,
+    #lobby[data-phase="ended"] #players {
+      grid-template-columns: 1fr;
+      max-height: min(58vh, 520px);
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    #lobby[data-phase="live"] .event-feed,
+    #lobby[data-phase="ended"] .event-feed {
+      max-height: min(58vh, 520px);
+    }
+
+    #lobby[data-phase="live"] .host-panel,
+    #lobby[data-phase="ended"] .host-panel {
+      border-radius: 10px;
+      border: 0;
+      background: rgba(34, 98, 137, 0.25);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+    }
+
+    #lobby[data-phase="live"] .host-panel h3,
+    #lobby[data-phase="ended"] .host-panel h3 {
+      font-size: 1.5rem;
+      opacity: 0.95;
+    }
+
+    #lobby[data-phase="live"] .start-btn,
+    #lobby[data-phase="ended"] .start-btn {
+      display: none;
+    }
+
+    .player-shell {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 4px solid rgba(255, 255, 255, 0.7);
+      background: #e2e2e2;
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    .play-hud {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      color: #fff;
+      font-size: clamp(1rem, 1.7vw, 2rem);
+      border-bottom: 4px solid rgba(45, 9, 62, 0.45);
+    }
+
+    .play-hud.is-correct {
+      background: linear-gradient(180deg, #18a85f 0%, #127e47 100%);
+      border-bottom-color: rgba(4, 58, 30, 0.6);
+    }
+
+    .play-hud.is-incorrect {
+      background: linear-gradient(180deg, #cf3d36 0%, #ad2922 100%);
+      border-bottom-color: rgba(88, 20, 16, 0.65);
+    }
+
+    .hud-left,
+    .hud-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+    }
+
+    .hud-right {
+      justify-self: end;
+    }
+
+    .hud-center {
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      text-align: center;
+      min-width: 150px;
+    }
+
+    .hud-chip {
+      border: 2px solid rgba(255, 255, 255, 0.38);
+      border-radius: 8px;
+      padding: 2px 7px;
+      font-size: 0.75rem;
+      letter-spacing: 0.4px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .question-stage {
+      background: #dedede;
+      padding: clamp(16px, 3vw, 34px) clamp(16px, 3vw, 42px);
+      min-height: clamp(260px, 36vh, 390px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .prompt-wrap {
+      display: grid;
+      grid-template-columns: minmax(240px, 420px) 1fr;
+      gap: clamp(16px, 3vw, 60px);
+      align-items: center;
+      width: 100%;
+    }
+
+    .prompt-wrap.prompt-no-media {
+      grid-template-columns: 1fr;
+      max-width: 920px;
+    }
+
+    .question-visual {
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 4 / 2.6;
+      border-radius: 0;
+      overflow: hidden;
+      background: #c8d4db;
+      justify-self: center;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .question-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .question-title {
+      font-size: clamp(2rem, 4vw, 4rem);
+      line-height: 1.08;
+      color: #3c3f45;
+      font-weight: 700;
+      margin: 0;
+      text-align: center;
+    }
+
+    .chest-screen {
+      width: 100%;
+      min-height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 26px;
+      align-items: start;
+      justify-items: center;
+    }
+
+    .chest-banner {
+      width: min(1040px, 94%);
+      background: #dd2525;
+      border: 14px solid #e32b2b;
+      box-shadow: 8px 10px 0 rgba(0, 0, 0, 0.15);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+
+    .chest-banner-inner {
+      border: 8px solid #ffcf35;
+      color: #fff;
+      font-family: "Baloo 2", cursive;
+      font-size: clamp(2.2rem, 3.4vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.05;
+      text-align: center;
+      padding: 14px;
+      text-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .chest-row {
+      width: min(1040px, 100%);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(130px, 1fr));
+      gap: clamp(14px, 3vw, 34px);
+      align-items: end;
+      padding: 0 clamp(10px, 3vw, 28px);
+    }
+
+    .chest-btn {
+      min-height: clamp(140px, 19vw, 220px);
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      cursor: pointer;
+      position: relative;
+      overflow: visible;
+      background: transparent;
+      padding: 0;
+      transition: transform 0.12s ease, filter 0.12s ease;
+    }
+
+    .chest-btn:hover {
+      transform: translateY(-3px);
+      filter: brightness(1.06);
+    }
+
+    .chest-btn img {
+      width: 100%;
+      height: auto;
+      display: block;
+      pointer-events: none;
+      filter: drop-shadow(0 10px 0 rgba(0, 0, 0, 0.16));
+    }
+
+    .chest-btn.is-disabled {
+      opacity: 0.75;
+      filter: grayscale(0.15);
+    }
+
+    .chest-result-row {
+      width: min(1120px, 96%);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(140px, 1fr));
+      gap: clamp(14px, 3vw, 36px);
+      align-items: end;
+      margin-top: 8px;
+    }
+
+    .result-choice {
+      color: rgba(236, 244, 255, 0.92);
+      text-align: center;
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+      min-height: 120px;
+      font-weight: 800;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    .result-choice .result-icon {
+      width: 96px;
+      height: 96px;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      border: 3px solid rgba(255, 255, 255, 0.28);
+      box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.16), 0 8px 14px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .result-choice .result-icon span {
+      font-size: 2.45rem;
+      line-height: 1;
+      color: #fff;
+      font-weight: 900;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.28);
+      transform: translateY(-1px);
+    }
+
+    .result-icon.icon-gain {
+      background: linear-gradient(180deg, #2dd170 0%, #1ea85a 100%);
+    }
+
+    .result-icon.icon-loss {
+      background: linear-gradient(180deg, #f0534f 0%, #cf3a35 100%);
+    }
+
+    .result-icon.icon-take {
+      background: linear-gradient(180deg, #f8b543 0%, #df8b1e 100%);
+    }
+
+    .result-icon.icon-swap {
+      background: linear-gradient(180deg, #6a86ff 0%, #5164da 100%);
+    }
+
+    .result-icon.icon-neutral {
+      background: linear-gradient(180deg, #8d96aa 0%, #6f788b 100%);
+    }
+
+    .result-choice .result-label {
+      font-size: clamp(1.05rem, 1.8vw, 1.7rem);
+      line-height: 1.05;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
+    }
+
+    .result-choice.active {
+      color: #fff;
+      transform: scale(1.06);
+      opacity: 1;
+    }
+
+    .result-choice.active .result-icon {
+      border-color: rgba(255, 255, 255, 0.9);
+      box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.16), 0 10px 18px rgba(0, 0, 0, 0.26), 0 0 0 4px rgba(255, 255, 255, 0.25);
+    }
+
+    .result-choice:not(.active) {
+      opacity: 0.72;
+    }
+
+    .chest-note {
+      color: rgba(255, 255, 255, 0.95);
+      font-size: clamp(1rem, 1.4vw, 1.4rem);
+      font-weight: 800;
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    .chest-outcome {
+      border-radius: 18px;
+      padding: 12px 16px;
+      text-align: center;
+      width: min(620px, 92%);
+      border: 3px solid rgba(255, 255, 255, 0.42);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24), inset 0 -6px 0 rgba(0, 0, 0, 0.14);
+      color: #fff;
+    }
+
+    .chest-outcome.is-gain {
+      background: linear-gradient(180deg, #2fbf66 0%, #22914c 100%);
+    }
+
+    .chest-outcome.is-loss {
+      background: linear-gradient(180deg, #d84747 0%, #ab3232 100%);
+    }
+
+    .chest-outcome.is-take {
+      background: linear-gradient(180deg, #e69d2e 0%, #be7616 100%);
+    }
+
+    .chest-outcome.is-swap {
+      background: linear-gradient(180deg, #5f7dff 0%, #465dd2 100%);
+    }
+
+    .chest-outcome.is-neutral {
+      background: linear-gradient(180deg, #7f8aa1 0%, #5f687f 100%);
+    }
+
+    .chest-outcome-top {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .chest-outcome-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.58);
+      background: rgba(0, 0, 0, 0.2);
+      display: inline-grid;
+      place-items: center;
+      font-size: 1.2rem;
+      font-weight: 900;
+      line-height: 1;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.22);
+    }
+
+    .chest-outcome-head {
+      color: #fff;
+      font-family: "Baloo 2", cursive;
+      font-size: clamp(1.35rem, 2.4vw, 2.2rem);
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .chest-outcome .chest-note {
+      margin-top: 4px;
+      color: rgba(255, 255, 255, 0.97);
+      font-size: clamp(1rem, 1.5vw, 1.5rem);
+    }
+
+    .chest-note.subtle {
+      font-size: clamp(0.86rem, 1.2vw, 1rem);
+      color: rgba(255, 255, 255, 0.88);
+      font-weight: 700;
+    }
+
+    .chest-impact-grid {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .chest-impact-grid.single {
+      grid-template-columns: 1fr;
+    }
+
+    .impact-card {
+      border-radius: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      background: rgba(0, 0, 0, 0.2);
+      padding: 8px 10px;
+      text-align: center;
+      display: grid;
+      gap: 2px;
+      min-height: 88px;
+      align-content: center;
+    }
+
+    .impact-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 900;
+      opacity: 0.9;
+    }
+
+    .impact-main {
+      font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .impact-delta {
+      font-size: 0.86rem;
+      font-weight: 900;
+      color: #fff8d7;
+    }
+
+    .impact-delta.positive {
+      color: #c6ffd8;
+    }
+
+    .impact-delta.negative {
+      color: #ffd2d2;
+    }
+
+    .impact-connector {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.95);
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+      min-width: 26px;
+      text-align: center;
+    }
+
+    .chest-next-btn {
+      min-width: 210px;
+      font-size: clamp(1.2rem, 2vw, 2rem);
+      padding: 14px 28px;
+      border-radius: 14px;
+      background: #dd2525;
+      border: 10px solid #e32b2b;
+      box-shadow: 0 8px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    .player-note {
+      text-align: center;
+      color: #2f4f6d;
+      font-weight: 800;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 10px;
+      background: #9a6f2f;
+    }
+
+    .answer-tile {
+      border: 0;
+      border-radius: 6px;
+      min-height: clamp(96px, 16vh, 170px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: clamp(1.15rem, 2vw, 2.25rem);
+      font-weight: 700;
+      color: #fff;
+      box-shadow: inset 0 -7px 0 rgba(0, 0, 0, 0.18);
+      padding: 14px;
+      white-space: normal;
+      line-height: 1.1;
+      position: relative;
+      gap: 16px;
+    }
+
+    .tile-symbol {
+      font-size: clamp(1.9rem, 3vw, 3.2rem);
+      font-weight: 900;
+      line-height: 1;
+      min-width: 38px;
+      text-align: center;
+      opacity: 0;
+    }
+
+    .tile-label {
+      display: inline-block;
+      text-align: center;
+    }
+
+    .answer-tile:hover {
+      transform: none;
+      filter: brightness(1.05);
+    }
+
+    .tile-0 {
+      background: #f7a321;
+    }
+
+    .tile-1 {
+      background: #3f78e5;
+    }
+
+    .tile-2 {
+      background: #14c97e;
+    }
+
+    .tile-3 {
+      background: #ff4931;
+    }
+
+    .answer-tile.is-muted {
+      background: #b9b9bc;
+      color: rgba(255, 255, 255, 0.87);
+      box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.1);
+    }
+
+    .answer-tile.is-muted .tile-symbol {
+      opacity: 0.85;
+    }
+
+    .answer-tile.is-wrong {
+      background: #c73933;
+      color: #fff;
+      box-shadow: inset 0 -7px 0 rgba(123, 21, 17, 0.5);
+    }
+
+    .answer-tile.is-wrong .tile-symbol {
+      opacity: 1;
+    }
+
+    .answer-tile.is-right {
+      background: #1da963;
+      color: #fff;
+      box-shadow: inset 0 -7px 0 rgba(5, 82, 43, 0.45);
+    }
+
+    .answer-tile.is-right .tile-symbol {
+      opacity: 1;
+    }
+
+    .answer-tile.is-locked {
+      pointer-events: none;
+    }
+
+    .answer-feedback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 10px 14px;
+      margin: 0 8px 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.55);
+      color: #6d6f73;
+      font-size: clamp(1.1rem, 2vw, 2rem);
+      font-weight: 800;
+      min-height: 72px;
+    }
+
+    .feedback-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 2rem;
+      line-height: 1;
+      font-weight: 900;
+      background: #c53b34;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .answer-feedback.correct .feedback-icon {
+      background: #1ea85f;
+    }
+
+    @media (max-width: 980px) {
+      .columns {
+        grid-template-columns: 1fr;
+      }
+
+      .waiting-header {
+        grid-template-columns: 1fr;
+        text-align: center;
+        justify-items: center;
+      }
+
+      #lobby[data-phase="live"] .host-grid,
+      #lobby[data-phase="ended"] .host-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .host-actions {
+        justify-content: flex-start;
+      }
+
+      .lobby-stage-top {
+        justify-content: center;
+      }
+
+      .prompt-wrap {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .question-stage {
+        min-height: 280px;
+      }
+
+      .answer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .option-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chest-row,
+      .chest-result-row {
+        grid-template-columns: 1fr;
+        max-width: 360px;
+      }
+    }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="top"><div class="title">Greenit</div><div class="tag">host + join + chest + swaps</div></div>
+  <div class="app">
+    <header class="brand-strip">
+      <h1 class="title">Greenit</h1>
+      <div class="tag"></div>
+    </header>
 
-  <div id="home" class="card"><h2>Choose Role</h2><div class="row" style="margin-top:10px"><button id="goHost">Host Game</button><button id="goJoin" class="alt">Join Game</button></div></div>
-
-  <div id="host" class="card hidden">
-    <h2>Host Setup</h2><div class="row" style="margin-top:8px"><button id="backFromHost" class="alt">Back</button></div>
-    <div class="columns" style="margin-top:12px">
-      <div class="stack">
-        <h3>1) Pick a set</h3>
-        <div class="row"><input id="searchSets" placeholder="Search sets"/><button id="runSearch">Search</button></div>
-        <div id="setResults"></div>
-        <p class="small">Or use your own custom set (saved in this browser).</p>
-        <input id="customTitle" placeholder="Custom set title"/>
-        <textarea id="customQuestions" placeholder="Question?|A|B|C|D|correct_index(0-3)"></textarea>
-        <div class="row"><button id="saveCustom" class="sub">Save custom set</button><button id="loadCustom" class="sub">Use saved set</button></div>
+    <section id="home" class="screen panel">
+      <h2>Choose Role</h2>
+      <div class="row" style="margin-top: 10px;">
+        <button id="goHost">Host Game</button>
+        <button id="goJoin" class="alt">Join Game</button>
       </div>
-      <div class="stack">
-        <h3>2) Mode</h3>
-        <select id="gameType"><option value="question">Gold Quest (question count)</option><option value="timed">Time Attack</option></select>
-        <div class="row"><input id="questionLimit" type="number" min="1" max="30" value="20"/><span class="small">Questions</span></div>
-        <div class="row"><input id="timeLimit" type="number" min="30" max="900" value="120"/><span class="small">Timer sec</span></div>
-        <button id="createHostLobby">Create Lobby</button><p id="hostStatus" class="status"></p>
+    </section>
+
+    <section id="host" class="screen panel hidden">
+      <h2>Host Setup</h2>
+      <div class="row" style="margin-top: 8px;">
+        <button id="backFromHost" class="alt">Back</button>
       </div>
-    </div>
-  </div>
+      <div class="columns">
+        <div class="stack">
+          <h3>1) Pick a set</h3>
+          <div class="row">
+            <input id="searchSets" placeholder="Search live categories (OpenTDB, Trivia API, jService, flags)" />
+            <button id="runSearch">Search</button>
+          </div>
+          <div class="quick-search">
+            <button class="quick-btn" data-query="science">Science</button>
+            <button class="quick-btn" data-query="history">History</button>
+            <button class="quick-btn" data-query="sports">Sports</button>
+            <button class="quick-btn" data-query="music">Music</button>
+            <button class="quick-btn" data-query="flags">Flags / logos</button>
+          </div>
+          <div class="custom-editor">
+            <input id="aiPrompt" placeholder="Generate with AI (example: Grade 8 biology review with cells and ecosystems)" />
+            <div class="option-grid">
+              <div class="stack">
+                <span class="small">AI questions</span>
+                <input id="aiQuestionCount" type="number" min="3" max="40" value="12" />
+              </div>
+              <div class="stack">
+                <span class="small">Difficulty</span>
+                <select id="aiDifficulty">
+                  <option value="mixed">Mixed</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+            <div class="option-grid">
+              <label class="check-line"><input id="aiWithImages" type="checkbox" checked />Generate image questions</label>
+              <div class="stack">
+                <span class="small">Image style</span>
+                <select id="aiImageTheme">
+                  <option value="auto">Auto</option>
+                  <option value="logos">Logos</option>
+                  <option value="flags">Flags</option>
+                </select>
+              </div>
+            </div>
+            <button id="generateAiSet" class="sub" type="button">Generate Quiz (Groq)</button>
+          </div>
+          <p class="small">AI generation requires `GROQ_API_KEY`. Google image replacement works server-side with no keys (rate-limit dependent).</p>
+          <div id="generatedSetResults" class="generated-sets"></div>
+          <div id="setResults" class="set-results"></div>
+          <div id="setPreviewWrap" class="custom-editor hidden" style="margin-top: 8px;">
+            <div class="set-preview-head">
+              <div id="setPreviewTitle" class="set-title">Question preview</div>
+              <button id="closeSetPreview" class="ghost" type="button">Close</button>
+            </div>
+            <div id="setPreviewList" class="set-preview-list"></div>
+          </div>
+          <p class="small">Sets are fetched live from remote quiz APIs. If a provider is down, use custom questions below.</p>
+          <input id="customTitle" placeholder="Custom set title" />
+          <div class="custom-editor">
+            <input id="builderQuestion" placeholder="Question text" />
+            <input id="builderImage" placeholder="Image URL (optional, for logo/flag quizzes)" />
+            <textarea id="builderAnswers" placeholder="Answers (one per line, 2 to 8 choices)"></textarea>
+            <div class="option-grid">
+              <div class="stack">
+                <span class="small">Correct answer # (1-based)</span>
+                <input id="builderCorrect" type="number" min="1" value="1" />
+              </div>
+              <div class="row" style="align-items: end;">
+                <button id="addCustomQuestion" class="sub" type="button">Add question</button>
+              </div>
+            </div>
+            <div id="customQuestionList" class="custom-list"></div>
+          </div>
+          <div class="row">
+            <button id="useEditorCustom" class="sub">Use editor set</button>
+            <button id="saveCustom" class="sub">Save custom set</button>
+            <button id="loadCustom" class="sub">Use saved set</button>
+            <button id="clearCustom" class="ghost">Clear editor</button>
+          </div>
+        </div>
+        <div class="stack">
+          <h3>2) Mode</h3>
+          <select id="gameType">
+            <option value="question">Gold Quest (question count)</option>
+            <option value="timed">Time Attack</option>
+          </select>
+          <div class="option-grid">
+            <div class="stack">
+              <span class="small">Questions</span>
+              <input id="questionLimit" type="number" min="1" max="80" value="20" />
+            </div>
+            <div class="stack">
+              <span class="small">Timer (seconds)</span>
+              <input id="timeLimit" type="number" min="30" max="900" value="120" />
+            </div>
+          </div>
+          <div class="option-grid">
+            <div class="stack">
+              <span class="small">Max players</span>
+              <input id="maxPlayers" type="number" min="1" max="120" value="60" />
+            </div>
+            <div class="stack">
+              <span class="small">Answer delay (sec)</span>
+              <input id="feedbackDelay" type="number" min="0" max="5" step="0.5" value="1" />
+            </div>
+          </div>
+          <label class="check-line"><input id="shuffleQuestions" type="checkbox" checked />Shuffle question order</label>
+          <button id="createHostLobby">Create Lobby</button>
+          <p id="hostStatus" class="status"></p>
+        </div>
+      </div>
+    </section>
 
-  <div id="join" class="card hidden">
-    <h2>Join Game</h2><div class="row" style="margin-top:8px"><button id="backFromJoin" class="alt">Back</button></div>
-    <div class="row" style="margin-top:10px"><input id="joinCode" placeholder="Code"/><input id="joinName" placeholder="Name"/></div>
-    <div id="joinBlookGrid" class="grid" style="margin-top:10px"></div><button id="joinLobby" style="margin-top:10px">Join Lobby</button><p id="joinStatus" class="status"></p>
-  </div>
+    <section id="join" class="screen panel hidden">
+      <h2>Join Game</h2>
+      <div class="row" style="margin-top: 8px;">
+        <button id="backFromJoin" class="alt">Back</button>
+      </div>
+      <div class="row" style="margin-top: 10px;">
+        <input id="joinCode" placeholder="Code" />
+        <input id="joinName" placeholder="Name" />
+      </div>
+      <p class="small" style="margin-top: 10px;">Join first, then choose your blook while waiting for host start.</p>
+      <button id="joinLobby" style="margin-top: 10px;">Join Lobby</button>
+      <p id="joinStatus" class="status"></p>
+    </section>
 
-  <div id="lobby" class="card hidden">
-    <h2>Host Dashboard <span id="lobbyCode"></span></h2><p id="lobbyMeta" class="small" style="margin-top:8px"></p>
-    <div class="hostgrid" style="margin-top:12px">
-      <div class="card" style="margin-top:0">
-        <h3>Leaderboard</h3>
-        <div id="players" style="margin-top:8px"></div>
-        <div class="row" style="margin-top:12px"><button id="startGame">Start</button><button id="endGame" class="warn">End for all</button><button id="closeLobby" class="alt">Delete Lobby</button></div>
+    <section id="lobby" class="screen hidden" data-phase="lobby">
+      <div class="waiting-header">
+        <div id="qrWrap" class="qr-wrap"></div>
+        <div class="invite-text">
+          Go to <strong id="joinHost">play.greenit.com</strong><br />
+          and enter Game ID:
+        </div>
+        <span id="lobbyCode" class="code-big">------</span>
+        <button id="copyJoinLink" class="copy-link">Copy Join Link</button>
+      </div>
+
+      <div class="live-header">
+        <div>Greenit</div>
+        <div id="liveClock" class="hud-clock">--:--</div>
+        <div>ID: <span id="liveCode">------</span></div>
+      </div>
+
+      <div class="lobby-stage">
+        <div class="lobby-stage-top">
+          <div class="players-badge"><span id="playerCount">0</span> players</div>
+          <h2 class="mode-title">Greenit</h2>
+          <button id="startGame" class="start-btn">Start - 3s</button>
+        </div>
+
+        <div class="host-grid">
+          <section id="playersPanel" class="host-panel">
+            <h3 id="playersTitle">Players</h3>
+            <div id="players"></div>
+          </section>
+          <section id="eventsPanel" class="host-panel">
+            <h3>Event Feed</h3>
+            <div id="eventFeed" class="event-feed"></div>
+          </section>
+        </div>
+
+        <p id="lobbyMeta"></p>
+        <div class="row host-actions">
+          <button id="endGame" class="warn">End for all</button>
+          <button id="closeLobby" class="ghost">Delete Lobby</button>
+        </div>
         <p id="startStatus" class="status"></p>
       </div>
-      <div class="stack">
-        <div class="card" style="margin-top:0"><h3>Join QR</h3><p class="small" id="joinUrlText"></p><div id="qrWrap" style="margin-top:8px"></div></div>
-        <div class="card" style="margin-top:0"><h3>Event Feed</h3><div id="eventFeed" class="event-feed" style="margin-top:8px"></div></div>
+    </section>
+
+    <section id="playerGame" class="screen hidden">
+      <div class="player-shell">
+        <div class="play-hud">
+          <div class="hud-left">
+            <span class="hud-chip">SND</span>
+            <span id="playerHudName">user123</span>
+          </div>
+          <div id="playerHudResult" class="hud-center"></div>
+          <div class="hud-right">
+            <span id="playerHudGold">0</span>
+            <span class="hud-chip">TOK</span>
+            <span class="hud-chip">BAG</span>
+          </div>
+        </div>
+        <div id="questionPanel" class="question-stage"></div>
+        <div id="answerFeedback" class="answer-feedback hidden"><span id="feedbackIcon" class="feedback-icon">?</span><span id="feedbackText"></span></div>
+        <div id="answerGrid" class="answer-grid"></div>
+        <p id="playerMeta" class="small player-note"></p>
+        <p id="playerStatus" class="status player-note" style="margin: 0;"></p>
       </div>
-    </div>
+    </section>
   </div>
 
-  <div id="playerGame" class="card hidden"><h2>Player</h2><p id="playerMeta" class="small" style="margin-top:8px"></p><div id="questionPanel" class="question" style="margin-top:12px"></div><p id="playerStatus" class="status" style="margin-top:10px"></p></div>
-</div>
-<script>
-const views=['home','host','join','lobby','playerGame'];
-let joinSelectedBlook=null,currentHostGameCode=null,lobbyPoll=null,playerPoll=null;
-let currentPlayer={code:null,id:null,name:null}; let selectedSetId=null; let selectedCustomSet=null;
-const hostStatus=document.getElementById('hostStatus');const joinStatus=document.getElementById('joinStatus');const startStatus=document.getElementById('startStatus');
+  <script>
+    const views = ["home", "host", "join", "lobby", "playerGame"];
+    let currentHostGameCode = null;
+    let lobbyPoll = null;
+    let playerPoll = null;
+    let currentPlayer = { code: null, id: null, name: null, blook: null };
+    let selectedSetId = null;
+    let selectedCustomSet = null;
+    let generatedAiSet = null;
+    let customDraftQuestions = [];
+    let currentEditorSource = "manual";
+    let latestJoinUrl = "";
+    let playerFeedbackLockUntil = 0;
+    let playerFeedbackTimer = null;
 
-function showView(v){views.forEach(id=>document.getElementById(id).classList.toggle('hidden',id!==v));}
-async function api(url,opt){const r=await fetch(url,opt);const d=await r.json();if(!r.ok) throw new Error(d.error||'Request failed');return d;}
+    const hostStatus = document.getElementById("hostStatus");
+    const joinStatus = document.getElementById("joinStatus");
+    const startStatus = document.getElementById("startStatus");
 
-function prefillJoinCodeFromQuery(){const code=new URLSearchParams(location.search).get('code');if(code){document.getElementById('joinCode').value=code.toUpperCase();}}
+    function showView(viewId) {
+      views.forEach((id) => {
+        document.getElementById(id).classList.toggle("hidden", id !== viewId);
+      });
+    }
 
-async function loadBlooks(){
-  const data=await api('/api/blooks');
-  const el=document.getElementById('joinBlookGrid');el.innerHTML='';
-  data.blooks.forEach(b=>{const c=document.createElement('div');c.className='blook';c.innerHTML=`<img src="${b.imageUrl}"/><div>${b.name}</div><small>${b.rarity}</small>`;c.onclick=()=>{joinSelectedBlook=b;joinStatus.textContent='Selected: '+b.name};el.appendChild(c);});
-}
+    async function api(url, options) {
+      const response = await fetch(url, options);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
 
-async function searchSets(){
-  const q=encodeURIComponent(document.getElementById('searchSets').value.trim());
-  const data=await api('/api/quiz/search?q='+q);const root=document.getElementById('setResults');root.innerHTML='';
-  data.sets.forEach(set=>{const row=document.createElement('div');row.className='blook';row.style.marginTop='8px';row.innerHTML=`<strong>${set.title}</strong><br/><small>${set.description} • ${set.source}</small><br/><button class="sub" style="margin-top:8px">Use set</button>`;row.querySelector('button').onclick=()=>{selectedSetId=set.id;selectedCustomSet=null;hostStatus.textContent='Selected set: '+set.title};root.appendChild(row);});
-  if(!data.sets.length) root.innerHTML='<p class="small">No sets found.</p>';
-}
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
 
-function parseCustomQuestionLines(text){const lines=text.split('\n').map(x=>x.trim()).filter(Boolean);const questions=[];lines.forEach(line=>{const parts=line.split('|').map(x=>x.trim());if(parts.length!==6) throw new Error('Each custom line needs 6 fields.');const [q,a,b,c,d,raw]=parts;const correct=Number(raw);if(!q||[a,b,c,d].some(x=>!x)||!Number.isInteger(correct)||correct<0||correct>3) throw new Error('Bad custom line format.');questions.push({q,answers:[a,b,c,d],correct});});if(!questions.length) throw new Error('Add at least one custom question.');return questions;}
-function saveCustomSet(){try{const title=document.getElementById('customTitle').value.trim();if(!title) throw new Error('Custom title required.');const questions=parseCustomQuestionLines(document.getElementById('customQuestions').value);localStorage.setItem('greenit.customSet',JSON.stringify({title,description:'Saved in browser',questions}));hostStatus.textContent='Saved custom set.';}catch(e){hostStatus.textContent=e.message;}}
-function useSavedCustomSet(){try{const raw=localStorage.getItem('greenit.customSet');if(!raw) throw new Error('No saved custom set.');selectedCustomSet=JSON.parse(raw);selectedSetId=null;hostStatus.textContent='Using custom set: '+selectedCustomSet.title;}catch(e){hostStatus.textContent=e.message;}}
+    function stableHash(input) {
+      let hash = 2166136261;
+      const text = String(input || "");
+      for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
 
-function renderJoinQr(code){
-  const joinUrl=`${location.origin}/?code=${encodeURIComponent(code)}`;
-  document.getElementById('joinUrlText').textContent=joinUrl;
-  const qrSrc=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(joinUrl)}`;
-  document.getElementById('qrWrap').innerHTML=`<div class="qr"><img src="${qrSrc}" width="200" height="200" alt="join qr"/></div>`;
-}
+    function buildShuffledAnswerChoices(question, questionIndex) {
+      const answers = Array.isArray(question?.answers) ? question.answers : [];
+      const seedBase = `${currentPlayer.id || "player"}|${questionIndex}|${String(question?.q || "")}`;
+      return answers
+        .map((answer, answerIndex) => ({
+          answerIndex,
+          answerText: String(answer || ""),
+          key: stableHash(`${seedBase}|${answerIndex}|${answer}`),
+        }))
+        .sort((a, b) => (a.key === b.key ? a.answerIndex - b.answerIndex : a.key - b.key))
+        .map(({ answerIndex, answerText }) => ({ answerIndex, answerText }));
+    }
 
-async function kickPlayer(playerId){try{await api('/api/games/'+currentHostGameCode+'/kick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerId})});await refreshLobby();}catch(e){startStatus.textContent=e.message;}}
+    function toQuestionImageSrc(url) {
+      const value = String(url || "").trim();
+      if (!value) return "";
+      if (/^\/?api\/image-proxy\?url=/i.test(value)) return value.startsWith("/") ? value : `/${value}`;
+      if (/^\/?image-proxy\?url=/i.test(value)) {
+        const encodedTarget = value.replace(/^\/?image-proxy\?url=/i, "");
+        return `/api/image-proxy?url=${encodedTarget}`;
+      }
+      if (/^https?:\/\//i.test(value)) return `/api/image-proxy?url=${encodeURIComponent(value)}`;
+      return value;
+    }
 
-async function refreshLobby(){
-  if(!currentHostGameCode)return;
-  const data=await api('/api/games/'+currentHostGameCode+'/lobby');
-  document.getElementById('lobbyCode').textContent=data.game.code;renderJoinQr(data.game.code);
-  const s=data.game.settings;document.getElementById('lobbyMeta').textContent=`${data.game.mode} • ${data.game.setTitle} • PIN ${data.game.hostPin} • ${s.gameType==='timed'?(s.timeLimitSec+'s timer'):(s.questionLimit+' questions')} • ${data.game.state}`;
-  const p=document.getElementById('players');p.innerHTML='';
-  [...data.game.players].sort((a,b)=>b.gold-a.gold).forEach((pl,i)=>{const row=document.createElement('div');row.className='player';row.innerHTML=`<span>#${i+1} <img src="${pl.blook.imageUrl}" width="24" height="24" style="vertical-align:middle;border-radius:6px;margin-right:6px"/> ${pl.playerName} (${pl.blook.name})</span><span class="gold">${pl.gold} gold <button class="warn kick">Kick</button></span>`;row.querySelector('button').onclick=()=>kickPlayer(pl.playerId);p.appendChild(row);});
-  if(!data.game.players.length)p.innerHTML='<p class="small">Waiting for players...</p>';
-  const feed=document.getElementById('eventFeed');feed.innerHTML='';(data.game.eventLog||[]).slice().reverse().forEach(ev=>{const row=document.createElement('div');row.className='event';row.innerHTML=`<div>${ev.text}</div><div class="small">${new Date(ev.at).toLocaleTimeString()}</div>`;feed.appendChild(row);});
-  if(!(data.game.eventLog||[]).length)feed.innerHTML='<div class="event"><span class="small">No events yet.</span></div>';
-  if(data.game.state==='ended')startStatus.textContent='Game ended for everyone.';
-}
+    function setEditorSource(source) {
+      currentEditorSource = source || "manual";
+      const saveBtn = document.getElementById("saveCustom");
+      if (!saveBtn) return;
+      const aiLocked = currentEditorSource === "ai-onetime";
+      saveBtn.disabled = aiLocked;
+      saveBtn.textContent = aiLocked ? "AI set is one-time" : "Save custom set";
+    }
 
-async function refreshPlayer(){
-  if(!currentPlayer.code||!currentPlayer.id)return;
-  try{
-    const data=await api('/api/games/'+currentPlayer.code+'/player/'+currentPlayer.id);
-    let meta=currentPlayer.name+' • Gold: '+(data.gold||0);if(typeof data.remainingSec==='number')meta+=' • ⏱ '+data.remainingSec+'s';document.getElementById('playerMeta').textContent=meta;
-    const panel=document.getElementById('questionPanel');
-    if(data.ended){panel.innerHTML='<h3>Host ended the game.</h3>';if(playerPoll){clearInterval(playerPoll);playerPoll=null;}return;}
-    if(data.waiting){panel.innerHTML='<h3>Waiting for host to start...</h3>';return;}
-    if(data.finished){panel.innerHTML='<h3>Done! Final gold: '+data.gold+'</h3><p class="small">Answered: '+(data.answered||0)+'</p>';if(playerPoll){clearInterval(playerPoll);playerPoll=null;}return;}
-    panel.innerHTML='<h3>Q'+(data.questionIndex+1)+': '+data.question.q+'</h3><p class="small">'+(data.gameType==='timed'?'Time attack':'Gold Quest')+' • target '+data.targetQuestions+'</p>';
-    data.question.answers.forEach((a,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=a;b.onclick=async()=>{try{const r=await api('/api/games/'+currentPlayer.code+'/player/'+currentPlayer.id+'/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({answerIndex:i})});document.getElementById('playerStatus').textContent=r.correct?('✅ Correct! +'+r.gained+' gold'+(r.chest?(' | 🎁 '+r.chest.text):'')):'❌ Wrong answer';await refreshPlayer();}catch(e){document.getElementById('playerStatus').textContent=e.message;}};panel.appendChild(b);});
-  }catch(e){document.getElementById('questionPanel').innerHTML='<h3>'+e.message+'</h3>';if(playerPoll){clearInterval(playerPoll);playerPoll=null;}}
-}
+    function renderSetPreview(set) {
+      const wrap = document.getElementById("setPreviewWrap");
+      const title = document.getElementById("setPreviewTitle");
+      const list = document.getElementById("setPreviewList");
+      const questions = Array.isArray(set?.questions) ? set.questions : [];
+      title.textContent = `${set?.title || "Question preview"} (${questions.length} questions)`;
+      list.innerHTML = "";
 
-document.getElementById('goHost').onclick=()=>showView('host');document.getElementById('goJoin').onclick=()=>showView('join');
-document.getElementById('backFromHost').onclick=()=>showView('home');document.getElementById('backFromJoin').onclick=()=>showView('home');
-document.getElementById('runSearch').onclick=searchSets;document.getElementById('saveCustom').onclick=saveCustomSet;document.getElementById('loadCustom').onclick=useSavedCustomSet;
-document.getElementById('createHostLobby').onclick=async()=>{try{if(!selectedSetId&&!selectedCustomSet)throw new Error('Select a set or custom set.');const body={setId:selectedSetId,customSet:selectedCustomSet,gameType:document.getElementById('gameType').value,questionLimit:Number(document.getElementById('questionLimit').value||20),timeLimitSec:Number(document.getElementById('timeLimit').value||120)};const data=await api('/api/host',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});currentHostGameCode=data.game.code;showView('lobby');startStatus.textContent='Lobby ready.';await refreshLobby();if(lobbyPoll)clearInterval(lobbyPoll);lobbyPoll=setInterval(refreshLobby,1500);}catch(e){hostStatus.textContent=e.message;}};
-document.getElementById('joinLobby').onclick=async()=>{try{const code=document.getElementById('joinCode').value.trim().toUpperCase();const name=document.getElementById('joinName').value.trim();if(!joinSelectedBlook)throw new Error('Pick a character to join.');const data=await api('/api/games/'+code+'/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerName:name,blook:joinSelectedBlook})});currentPlayer={code,id:data.player.playerId,name:data.player.playerName};showView('playerGame');await refreshPlayer();if(playerPoll)clearInterval(playerPoll);playerPoll=setInterval(refreshPlayer,1200);}catch(e){joinStatus.textContent=e.message;}};
-document.getElementById('startGame').onclick=async()=>{try{const data=await api('/api/games/'+currentHostGameCode+'/start',{method:'POST'});startStatus.textContent=data.message;await refreshLobby();}catch(e){startStatus.textContent=e.message;}};
-document.getElementById('endGame').onclick=async()=>{try{const data=await api('/api/games/'+currentHostGameCode+'/end',{method:'POST'});startStatus.textContent=data.message;await refreshLobby();}catch(e){startStatus.textContent=e.message;}};
-document.getElementById('closeLobby').onclick=async()=>{if(!currentHostGameCode)return showView('home');await fetch('/api/games/'+currentHostGameCode,{method:'DELETE'});currentHostGameCode=null;if(lobbyPoll)clearInterval(lobbyPoll);showView('home');};
-loadBlooks();searchSets();prefillJoinCodeFromQuery();
-</script>
+      if (!questions.length) {
+        list.innerHTML = '<p class="small">No questions available for preview.</p>';
+      } else {
+        questions.forEach((question, index) => {
+          const row = document.createElement("div");
+          row.className = "preview-item";
+          const answers = (Array.isArray(question.answers) ? question.answers : [])
+            .map((answer, answerIndex) => {
+              const isCorrect = Number(question.correct) === answerIndex;
+              return `<div class="preview-answer ${isCorrect ? "is-correct" : ""}">${answerIndex + 1}. ${escapeHtml(answer)}</div>`;
+            })
+            .join("");
+          row.innerHTML = `
+            <div class="preview-question">${index + 1}. ${escapeHtml(question.q || "")}</div>
+            ${question.imageUrl ? `<div class="preview-image"><img src="${escapeHtml(toQuestionImageSrc(question.imageUrl))}" alt="preview question image" loading="lazy" /></div>` : ""}
+            <div class="preview-answers">${answers}</div>
+          `;
+          list.appendChild(row);
+        });
+      }
+
+      wrap.classList.remove("hidden");
+    }
+
+    function renderGeneratedAiSetCard() {
+      const root = document.getElementById("generatedSetResults");
+      if (!root) return;
+      root.innerHTML = "";
+      if (!generatedAiSet || !Array.isArray(generatedAiSet.questions) || !generatedAiSet.questions.length) return;
+
+      const questionCount = generatedAiSet.questions.length;
+      const row = document.createElement("div");
+      row.className = "set-card";
+      row.innerHTML = `
+        <div class="set-top">
+          <div class="set-title">${escapeHtml(generatedAiSet.title || "AI Generated Set")}</div>
+          <div class="set-badges">
+            <span class="pill">Groq AI</span>
+            <span class="pill">${questionCount} Q</span>
+            <span class="pill">One-time</span>
+          </div>
+        </div>
+        <small>${escapeHtml(generatedAiSet.description || "Generated set from AI")}</small>
+        <div class="set-actions">
+          <button class="sub" data-action="use">Use set</button>
+          <button class="ghost" data-action="preview">View questions</button>
+        </div>
+      `;
+
+      const useBtn = row.querySelector('[data-action="use"]');
+      const previewBtn = row.querySelector('[data-action="preview"]');
+      if (useBtn) {
+        useBtn.onclick = () => {
+          selectedSetId = null;
+          selectedCustomSet = generatedAiSet;
+          hostStatus.textContent = `Selected set: ${generatedAiSet.title}`;
+          renderSetPreview(generatedAiSet);
+        };
+      }
+      if (previewBtn) {
+        previewBtn.onclick = () => renderSetPreview(generatedAiSet);
+      }
+
+      root.appendChild(row);
+    }
+
+    async function previewRemoteSet(setId, setTitle) {
+      try {
+        hostStatus.textContent = `Loading questions: ${setTitle}...`;
+        const data = await api(`/api/quiz/set?id=${encodeURIComponent(setId)}`);
+        renderSetPreview(data.set || {});
+        hostStatus.textContent = `Previewing: ${setTitle}`;
+      } catch (error) {
+        hostStatus.textContent = error.message;
+      }
+    }
+
+    function formatClock(totalSec) {
+      const safe = Math.max(0, Number(totalSec) || 0);
+      const minutes = Math.floor(safe / 60);
+      const seconds = safe % 60;
+      return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function ordinalRank(position) {
+      if (position === 1) return "1st";
+      if (position === 2) return "2nd";
+      if (position === 3) return "3rd";
+      return `${position}th`;
+    }
+
+    function getQuestionMedia(question) {
+      let text = String(question?.q || question || "").trim();
+      let imageUrl = String(question?.imageUrl || "").trim() || null;
+      let usesBlookFallback = false;
+
+      const tagged = text.match(/\[img:(https?:\/\/[^\]\s]+)\]/i);
+      if (tagged) {
+        imageUrl = tagged[1];
+        text = text.replace(tagged[0], "").trim();
+      } else {
+        const inline = text.match(/(https?:\/\/\S+\.(?:png|jpe?g|gif|webp))/i);
+        if (inline) {
+          imageUrl = inline[1];
+          text = text.replace(inline[1], "").trim();
+        }
+      }
+
+      if (!imageUrl && currentPlayer.blook?.imageUrl) {
+        imageUrl = currentPlayer.blook.imageUrl;
+        usesBlookFallback = true;
+      }
+      const displayImageUrl = imageUrl && !usesBlookFallback ? toQuestionImageSrc(imageUrl) : imageUrl;
+      return { text, imageUrl: displayImageUrl };
+    }
+
+    function setPlayerHudState(state, label) {
+      const hud = document.querySelector(".play-hud");
+      const resultEl = document.getElementById("playerHudResult");
+      hud.classList.remove("is-correct", "is-incorrect");
+      if (state === "correct") hud.classList.add("is-correct");
+      if (state === "incorrect") hud.classList.add("is-incorrect");
+      resultEl.textContent = label || "";
+    }
+
+    function hideFeedbackBanner() {
+      const feedbackEl = document.getElementById("answerFeedback");
+      const iconEl = document.getElementById("feedbackIcon");
+      const textEl = document.getElementById("feedbackText");
+      feedbackEl.classList.add("hidden");
+      feedbackEl.classList.remove("correct");
+      iconEl.textContent = "?";
+      textEl.textContent = "";
+    }
+
+    function prefillJoinCodeFromQuery() {
+      const code = new URLSearchParams(location.search).get("code");
+      if (code) {
+        document.getElementById("joinCode").value = code.toUpperCase();
+      }
+    }
+
+    async function choosePlayerBlook(blookId) {
+      const data = await api(`/api/games/${currentPlayer.code}/player/${currentPlayer.id}/blook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blookId }),
+      });
+      currentPlayer.blook = data.player?.blook || currentPlayer.blook;
+      return data;
+    }
+
+    async function searchSets() {
+      const root = document.getElementById("setResults");
+      root.innerHTML = "";
+      try {
+        const rawQuery = document.getElementById("searchSets").value.trim();
+        const query = encodeURIComponent(rawQuery);
+        const data = await api(`/api/quiz/search?q=${query}`);
+
+        data.sets.forEach((set) => {
+          const row = document.createElement("div");
+          row.className = "set-card";
+          const questionCount = Number(set.questionCount) || 0;
+          const disabled = questionCount < 1;
+          row.innerHTML = `
+            <div class="set-top">
+              <div class="set-title">${escapeHtml(set.title)}</div>
+              <div class="set-badges">
+                <span class="pill">${escapeHtml(set.source || "set")}</span>
+                <span class="pill">${questionCount} Q</span>
+              </div>
+            </div>
+            <small>${escapeHtml(set.description || "")}</small>
+            <div class="set-actions">
+              <button class="sub" data-action="use" ${disabled ? "disabled" : ""}>${disabled ? "Unavailable" : "Use set"}</button>
+              <button class="ghost" data-action="preview" ${disabled ? "disabled" : ""}>View questions</button>
+            </div>
+          `;
+          const useBtn = row.querySelector('[data-action="use"]');
+          const previewBtn = row.querySelector('[data-action="preview"]');
+          if (!disabled && useBtn) {
+            useBtn.onclick = () => {
+              selectedSetId = set.id;
+              selectedCustomSet = null;
+              hostStatus.textContent = `Selected set: ${set.title}`;
+              previewRemoteSet(set.id, set.title);
+            };
+          }
+          if (!disabled && previewBtn) {
+            previewBtn.onclick = () => previewRemoteSet(set.id, set.title);
+          }
+          root.appendChild(row);
+        });
+
+        if (!data.sets.length) {
+          root.innerHTML = '<p class="small">No sets found.</p>';
+        } else if (rawQuery) {
+          const top = data.sets[0];
+          if (top?.id) previewRemoteSet(top.id, top.title || "Top result");
+        }
+      } catch (error) {
+        root.innerHTML = '<p class="small">Could not load remote categories right now.</p>';
+        hostStatus.textContent = error.message;
+      }
+    }
+
+    async function generateAiSet() {
+      const button = document.getElementById("generateAiSet");
+      try {
+        const prompt = document.getElementById("aiPrompt").value.trim();
+        if (!prompt) throw new Error("AI prompt is required.");
+        const questionCount = Number(document.getElementById("aiQuestionCount").value || 12);
+        const difficulty = document.getElementById("aiDifficulty").value || "mixed";
+        const withImages = !!document.getElementById("aiWithImages").checked;
+        const imageTheme = document.getElementById("aiImageTheme").value || "auto";
+
+        button.disabled = true;
+        hostStatus.textContent = withImages ? "Generating AI quiz + images with Groq..." : "Generating AI quiz with Groq...";
+
+        const data = await api("/api/quiz/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, questionCount, difficulty, withImages, imageTheme }),
+        });
+
+        const set = data.set || {};
+        if (!set.title || !Array.isArray(set.questions) || !set.questions.length) {
+          throw new Error("AI returned an invalid set.");
+        }
+
+        document.getElementById("customTitle").value = set.title;
+        customDraftQuestions = set.questions.map((question) => ({
+          q: String(question.q || "").trim(),
+          answers: Array.isArray(question.answers) ? question.answers.map((answer) => String(answer || "").trim()).filter(Boolean) : [],
+          correct: Number(question.correct) || 0,
+          ...(question.imageUrl ? { imageUrl: String(question.imageUrl).trim() } : {}),
+        })).filter((question) => question.q && question.answers.length >= 2 && question.correct < question.answers.length);
+
+        if (!customDraftQuestions.length) throw new Error("AI did not return usable questions.");
+
+        selectedSetId = null;
+        selectedCustomSet = {
+          title: set.title,
+          description: set.description || "Generated by Groq",
+          oneTime: true,
+          questions: customDraftQuestions.map((question) => ({
+            q: question.q,
+            answers: [...question.answers],
+            correct: question.correct,
+            ...(question.imageUrl ? { imageUrl: question.imageUrl } : {}),
+          })),
+        };
+        generatedAiSet = selectedCustomSet;
+        setEditorSource("ai-onetime");
+        renderCustomQuestionList();
+        renderGeneratedAiSetCard();
+        renderSetPreview(selectedCustomSet);
+        hostStatus.textContent = `AI set ready (one-time): ${set.title} (${customDraftQuestions.length} questions${withImages ? ", images on" : ""})`;
+      } catch (error) {
+        hostStatus.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function parseEditorAnswers(rawValue) {
+      return rawValue
+        .split("\n")
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+    }
+
+    function clearEditorInputs() {
+      document.getElementById("builderQuestion").value = "";
+      document.getElementById("builderImage").value = "";
+      document.getElementById("builderAnswers").value = "";
+      document.getElementById("builderCorrect").value = "1";
+    }
+
+    function renderCustomQuestionList() {
+      const root = document.getElementById("customQuestionList");
+      root.innerHTML = "";
+
+      if (!customDraftQuestions.length) {
+        root.innerHTML = '<p class="small">No custom questions yet.</p>';
+        return;
+      }
+
+      customDraftQuestions.forEach((question, index) => {
+        const row = document.createElement("div");
+        row.className = "custom-item";
+        row.innerHTML = `
+          <div class="custom-item-head">
+            <div class="custom-item-title">${index + 1}. ${escapeHtml(question.q)}</div>
+            <div class="row">
+              <button type="button" class="sub" data-action="edit">Edit</button>
+              <button type="button" class="warn" data-action="remove">Remove</button>
+            </div>
+          </div>
+          <div class="custom-item-meta">
+            <span>${question.answers.length} answers</span>
+            <span>Correct: #${question.correct + 1}</span>
+            ${question.imageUrl ? `<span>Image</span>` : ""}
+          </div>
+          ${question.imageUrl ? `<div class="preview-image"><img src="${escapeHtml(toQuestionImageSrc(question.imageUrl))}" alt="question image" loading="lazy" /></div>` : ""}
+        `;
+
+        row.querySelector('[data-action="edit"]').onclick = () => {
+          document.getElementById("builderQuestion").value = question.q;
+          document.getElementById("builderImage").value = question.imageUrl || "";
+          document.getElementById("builderAnswers").value = question.answers.join("\n");
+          document.getElementById("builderCorrect").value = String(question.correct + 1);
+          customDraftQuestions.splice(index, 1);
+          renderCustomQuestionList();
+        };
+
+        row.querySelector('[data-action="remove"]').onclick = () => {
+          customDraftQuestions.splice(index, 1);
+          renderCustomQuestionList();
+        };
+
+        root.appendChild(row);
+      });
+    }
+
+    function addCustomQuestion() {
+      try {
+        const q = document.getElementById("builderQuestion").value.trim();
+        const imageUrl = document.getElementById("builderImage").value.trim();
+        const answers = parseEditorAnswers(document.getElementById("builderAnswers").value);
+        const correct = Number(document.getElementById("builderCorrect").value) - 1;
+
+        if (!q) throw new Error("Question text is required.");
+        if (answers.length < 2 || answers.length > 8) throw new Error("Use 2 to 8 answers.");
+        if (!Number.isInteger(correct) || correct < 0 || correct >= answers.length) {
+          throw new Error("Correct answer # is out of range.");
+        }
+        if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
+          throw new Error("Image URL must start with http:// or https://.");
+        }
+
+        const uniqueCount = new Set(answers.map((answer) => answer.toLowerCase())).size;
+        if (uniqueCount !== answers.length) throw new Error("Answers must be unique.");
+
+        customDraftQuestions.push({
+          q,
+          answers,
+          correct,
+          ...(imageUrl ? { imageUrl } : {}),
+        });
+
+        clearEditorInputs();
+        renderCustomQuestionList();
+        hostStatus.textContent = `Added question ${customDraftQuestions.length}.`;
+      } catch (error) {
+        hostStatus.textContent = error.message;
+      }
+    }
+
+    function getEditorCustomSet() {
+      const title = document.getElementById("customTitle").value.trim();
+      if (!title) throw new Error("Custom set title required.");
+      if (!customDraftQuestions.length) throw new Error("Add at least one custom question.");
+      return {
+        title,
+        description: "Created in custom editor",
+        ...(currentEditorSource === "ai-onetime" ? { oneTime: true } : {}),
+        questions: customDraftQuestions.map((question) => ({
+          q: question.q,
+          answers: [...question.answers],
+          correct: question.correct,
+          ...(question.imageUrl ? { imageUrl: question.imageUrl } : {}),
+        })),
+      };
+    }
+
+    function useEditorCustomSet() {
+      try {
+        selectedCustomSet = getEditorCustomSet();
+        selectedSetId = null;
+        renderSetPreview(selectedCustomSet);
+        hostStatus.textContent = `Using editor set: ${selectedCustomSet.title}`;
+      } catch (error) {
+        hostStatus.textContent = error.message;
+      }
+    }
+
+    function saveCustomSet() {
+      try {
+        if (currentEditorSource === "ai-onetime") {
+          throw new Error("AI-generated sets are one-time and cannot be saved locally.");
+        }
+        const set = getEditorCustomSet();
+        localStorage.setItem("greenit.customSet.v2", JSON.stringify(set));
+        hostStatus.textContent = "Saved custom set.";
+      } catch (error) {
+        hostStatus.textContent = error.message;
+      }
+    }
+
+    function useSavedCustomSet() {
+      try {
+        const raw = localStorage.getItem("greenit.customSet.v2") || localStorage.getItem("greenit.customSet");
+        if (!raw) throw new Error("No saved custom set.");
+        const loaded = JSON.parse(raw);
+        if (!loaded?.title || !Array.isArray(loaded.questions) || !loaded.questions.length) {
+          throw new Error("Saved custom set is invalid.");
+        }
+        document.getElementById("customTitle").value = loaded.title;
+        customDraftQuestions = loaded.questions.map((question) => ({
+          q: String(question.q || "").trim(),
+          answers: Array.isArray(question.answers) ? question.answers.map((answer) => String(answer || "").trim()).filter(Boolean) : [],
+          correct: Number(question.correct) || 0,
+          ...(question.imageUrl ? { imageUrl: String(question.imageUrl) } : {}),
+        })).filter((question) => question.q && question.answers.length >= 2 && question.correct < question.answers.length);
+        if (!customDraftQuestions.length) throw new Error("Saved set has no valid questions.");
+        selectedCustomSet = {
+          title: loaded.title,
+          description: loaded.description || "Saved in browser",
+          questions: customDraftQuestions.map((question) => ({
+            q: question.q,
+            answers: [...question.answers],
+            correct: question.correct,
+            ...(question.imageUrl ? { imageUrl: question.imageUrl } : {}),
+          })),
+        };
+        setEditorSource("saved");
+        selectedSetId = null;
+        renderCustomQuestionList();
+        renderSetPreview(selectedCustomSet);
+        hostStatus.textContent = `Using saved set: ${selectedCustomSet.title}`;
+      } catch (error) {
+        hostStatus.textContent = error.message;
+      }
+    }
+
+    function clearCustomEditor(statusText = "Custom editor cleared.") {
+      customDraftQuestions = [];
+      selectedCustomSet = null;
+      generatedAiSet = null;
+      document.getElementById("customTitle").value = "";
+      clearEditorInputs();
+      renderCustomQuestionList();
+      renderGeneratedAiSetCard();
+      document.getElementById("setPreviewWrap").classList.add("hidden");
+      setEditorSource("manual");
+      if (statusText) hostStatus.textContent = statusText;
+    }
+
+    function renderJoinQr(code) {
+      latestJoinUrl = `${location.origin}/?code=${encodeURIComponent(code)}`;
+      const hostLabel = document.getElementById("joinHost");
+      if (hostLabel) hostLabel.textContent = location.host || "play.greenit.com";
+
+      const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(latestJoinUrl)}`;
+      document.getElementById("qrWrap").innerHTML = `<img src="${qrSrc}" width="120" height="120" alt="Join QR" />`;
+    }
+
+    async function kickPlayer(playerId) {
+      try {
+        await api(`/api/games/${currentHostGameCode}/kick`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ playerId }),
+        });
+        await refreshLobby();
+      } catch (error) {
+        startStatus.textContent = error.message;
+      }
+    }
+
+    function renderLobbyPlayers(players, phase) {
+      const root = document.getElementById("players");
+      root.innerHTML = "";
+
+      if (!players.length) {
+        root.innerHTML = '<p class="small" style="color:#fff;">Waiting for players...</p>';
+        return;
+      }
+
+      players.forEach((player, index) => {
+        const row = document.createElement("div");
+        const blook = player.blook || player.avatar || {
+          name: "No Blook",
+          imageUrl: "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=No%20Blook",
+        };
+
+        if (phase === "lobby") {
+          row.className = "player-row player-card";
+          row.innerHTML = `
+            <div class="player-main">
+              <img src="${blook.imageUrl}" alt="${escapeHtml(blook.name)}" />
+              <span class="player-name">${escapeHtml(player.playerName)}</span>
+            </div>
+            <div class="player-side">
+              <span class="gold-chip">${player.gold}</span>
+              <button class="warn kick">Kick</button>
+            </div>
+          `;
+          row.querySelector("button").onclick = () => kickPlayer(player.playerId);
+        } else {
+          row.className = "player-row leader-row";
+          row.innerHTML = `
+            <span class="rank">${ordinalRank(index + 1)}</span>
+            <div class="player-main">
+              <img src="${blook.imageUrl}" alt="${escapeHtml(blook.name)}" />
+              <span class="leader-name">${escapeHtml(player.playerName)}</span>
+            </div>
+            <span class="leader-score">${player.gold}</span>
+          `;
+        }
+
+        root.appendChild(row);
+      });
+    }
+
+    function renderEventFeed(events) {
+      const feed = document.getElementById("eventFeed");
+      feed.innerHTML = "";
+      events.slice().reverse().forEach((event) => {
+        const row = document.createElement("div");
+        row.className = "event";
+        row.innerHTML = `
+          <div>${escapeHtml(event.text)}</div>
+          <div class="small">${new Date(event.at).toLocaleTimeString()}</div>
+        `;
+        feed.appendChild(row);
+      });
+      if (!events.length) feed.innerHTML = '<div class="event"><span class="small">No events yet.</span></div>';
+    }
+
+    async function refreshLobby() {
+      if (!currentHostGameCode) return;
+      const data = await api(`/api/games/${currentHostGameCode}/lobby`);
+      const phase = data.game.state === "lobby" ? "lobby" : data.game.state === "live" ? "live" : "ended";
+
+      const lobbyEl = document.getElementById("lobby");
+      lobbyEl.dataset.phase = phase;
+      document.getElementById("lobbyCode").textContent = data.game.code;
+      document.getElementById("liveCode").textContent = data.game.code;
+      document.getElementById("playersTitle").textContent = phase === "lobby" ? "Players" : "Leaderboard";
+      document.getElementById("playerCount").textContent = data.game.players.length;
+      renderJoinQr(data.game.code);
+
+      if (typeof data.game.remainingSec === "number") {
+        document.getElementById("liveClock").textContent = formatClock(data.game.remainingSec);
+      } else if (phase === "ended") {
+        document.getElementById("liveClock").textContent = "Game Over";
+      } else {
+        document.getElementById("liveClock").textContent = data.game.mode;
+      }
+
+      const settings = data.game.settings;
+      document.getElementById("lobbyMeta").textContent =
+        `${data.game.mode} • ${data.game.setTitle} • PIN ${data.game.hostPin} • ${settings.gameType === "timed" ? `${settings.timeLimitSec}s` : `${settings.questionLimit} Q`} • ${data.game.state}`;
+
+      const sortedPlayers = [...data.game.players].sort((a, b) => b.gold - a.gold);
+      renderLobbyPlayers(sortedPlayers, phase);
+      renderEventFeed(data.game.eventLog || []);
+
+      const startBtn = document.getElementById("startGame");
+      startBtn.disabled = phase !== "lobby";
+      startBtn.textContent = phase === "lobby" ? "Start - 3s" : phase === "live" ? "Live" : "Ended";
+
+      if (data.game.state === "ended") startStatus.textContent = "Game ended for everyone.";
+    }
+
+    function chestIconMeta(type) {
+      if (type === "swap") return { glyph: "⇄", className: "icon-swap" };
+      if (type === "take_percent") return { glyph: "⤴", className: "icon-take" };
+      if (type === "lose_percent" || type === "lose_flat") return { glyph: "−", className: "icon-loss" };
+      if (type === "bonus_percent" || type === "bonus_flat") return { glyph: "+", className: "icon-gain" };
+      if (type === "no_interaction") return { glyph: "!", className: "icon-neutral" };
+      return { glyph: "•", className: "icon-neutral" };
+    }
+
+    function chestOutcomeDetail(result) {
+      const before = Number(result?.playerBefore);
+      const after = Number(result?.playerAfter);
+      const parts = [];
+      if (Number.isFinite(before) && Number.isFinite(after)) {
+        parts.push(`You: ${before} → ${after}`);
+      }
+      if (result?.target && Number.isFinite(Number(result?.targetBefore)) && Number.isFinite(Number(result?.targetAfter))) {
+        parts.push(`${result.target}: ${Number(result.targetBefore)} → ${Number(result.targetAfter)}`);
+      }
+      return parts.join(" | ");
+    }
+
+    function chestDeltaLabel(delta) {
+      const value = Number(delta);
+      if (!Number.isFinite(value)) return "";
+      const sign = value > 0 ? "+" : "";
+      return `${sign}${value} gold`;
+    }
+
+    function chestImpactMarkup(result) {
+      const playerBefore = Number(result?.playerBefore);
+      const playerAfter = Number(result?.playerAfter);
+      const playerDelta = playerAfter - playerBefore;
+      const hasPlayer = Number.isFinite(playerBefore) && Number.isFinite(playerAfter);
+      const targetName = String(result?.target || "").trim();
+      const targetBefore = Number(result?.targetBefore);
+      const targetAfter = Number(result?.targetAfter);
+      const hasTarget = !!targetName && Number.isFinite(targetBefore) && Number.isFinite(targetAfter);
+
+      if (!hasPlayer) return "";
+
+      const playerDeltaClass = playerDelta > 0 ? "positive" : playerDelta < 0 ? "negative" : "";
+      const playerCard = `
+        <div class="impact-card">
+          <div class="impact-label">You</div>
+          <div class="impact-main">${playerBefore} → ${playerAfter}</div>
+          <div class="impact-delta ${playerDeltaClass}">${escapeHtml(chestDeltaLabel(playerDelta))}</div>
+        </div>
+      `;
+
+      if (!hasTarget) {
+        return `<div class="chest-impact-grid single">${playerCard}</div>`;
+      }
+
+      const targetDelta = targetAfter - targetBefore;
+      const targetDeltaClass = targetDelta > 0 ? "positive" : targetDelta < 0 ? "negative" : "";
+      const connector = result?.type === "swap" ? "⇄" : "→";
+      return `
+        <div class="chest-impact-grid">
+          ${playerCard}
+          <div class="impact-connector">${connector}</div>
+          <div class="impact-card">
+            <div class="impact-label">${escapeHtml(targetName)}</div>
+            <div class="impact-main">${targetBefore} → ${targetAfter}</div>
+            <div class="impact-delta ${targetDeltaClass}">${escapeHtml(chestDeltaLabel(targetDelta))}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function chestOutcomeMeta(type) {
+      if (type === "bonus_flat" || type === "bonus_percent") return { className: "is-gain", badge: "+" };
+      if (type === "lose_flat" || type === "lose_percent") return { className: "is-loss", badge: "−" };
+      if (type === "take_percent") return { className: "is-take", badge: "⤴" };
+      if (type === "swap") return { className: "is-swap", badge: "⇄" };
+      return { className: "is-neutral", badge: "•" };
+    }
+
+    async function chooseChestOption(optionIndex) {
+      return api(`/api/games/${currentPlayer.code}/player/${currentPlayer.id}/chest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ optionIndex }),
+      });
+    }
+
+    async function completeChestResult() {
+      return api(`/api/games/${currentPlayer.code}/player/${currentPlayer.id}/chest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "next" }),
+      });
+    }
+
+    async function refreshPlayer() {
+      if (!currentPlayer.code || !currentPlayer.id) return;
+      if (Date.now() < playerFeedbackLockUntil) return;
+      try {
+        const data = await api(`/api/games/${currentPlayer.code}/player/${currentPlayer.id}`);
+        const panel = document.getElementById("questionPanel");
+        const answerGrid = document.getElementById("answerGrid");
+        const metaEl = document.getElementById("playerMeta");
+        const statusEl = document.getElementById("playerStatus");
+        document.getElementById("playerHudName").textContent = currentPlayer.name || "player";
+        document.getElementById("playerHudGold").textContent = String(data.gold || 0);
+        const modeText = data.gameType === "timed" ? "Time Attack" : "Gold Quest";
+        const feedbackDelaySec = Math.max(0, Math.min(Number(data.feedbackDelaySec ?? 1), 5));
+        const feedbackDelayMs = Math.round(feedbackDelaySec * 1000);
+        hideFeedbackBanner();
+        if (playerFeedbackTimer) {
+          clearTimeout(playerFeedbackTimer);
+          playerFeedbackTimer = null;
+        }
+
+        if (data.ended) {
+          setPlayerHudState("incorrect", "GAME OVER");
+          panel.innerHTML = '<h2 class="question-title">Host ended the game.</h2>';
+          answerGrid.innerHTML = "";
+          metaEl.textContent = "Game ended";
+          if (playerPoll) {
+            clearInterval(playerPoll);
+            playerPoll = null;
+          }
+          return;
+        }
+
+        if (data.waiting) {
+          setPlayerHudState("", "WAITING");
+          answerGrid.innerHTML = "";
+          const selection = data.blookSelection || {};
+          const catalog = Array.isArray(selection.catalog) ? selection.catalog : [];
+          const takenIds = new Set(Array.isArray(selection.takenIds) ? selection.takenIds : []);
+          const current = selection.current || currentPlayer.blook || null;
+          if (current) currentPlayer.blook = current;
+
+          if (!catalog.length) {
+            panel.innerHTML = '<h2 class="question-title">Waiting for host to start...</h2>';
+            metaEl.textContent = "Lobby waiting room";
+            return;
+          }
+
+          const catalogKey = catalog.map((blook) => blook.id).join("|");
+          const mountedGrid = document.getElementById("waitBlookGrid");
+          const needsMount = !mountedGrid || panel.dataset.waitBlookCatalogKey !== catalogKey;
+
+          if (needsMount) {
+            panel.innerHTML = `
+              <div class="wait-pick-wrap">
+                <div class="wait-pick-head">Waiting for host to start. Pick your blook:</div>
+                <div id="waitBlookGrid" class="grid"></div>
+              </div>
+            `;
+            panel.dataset.waitBlookCatalogKey = catalogKey;
+            const waitGrid = document.getElementById("waitBlookGrid");
+            catalog.forEach((blook) => {
+              const card = document.createElement("div");
+              card.className = "avatar";
+              card.dataset.blookId = blook.id;
+              card.innerHTML = `
+                <img src="${blook.imageUrl}" alt="${escapeHtml(blook.name)}" />
+                <div>${escapeHtml(blook.name)}</div>
+                <small>Available</small>
+              `;
+              card.onclick = async () => {
+                try {
+                  if (Date.now() < playerFeedbackLockUntil) return;
+                  if (card.classList.contains("is-taken") && !card.classList.contains("is-current")) return;
+                  playerFeedbackLockUntil = Date.now() + 350;
+                  await choosePlayerBlook(blook.id);
+                  playerFeedbackLockUntil = 0;
+                  await refreshPlayer();
+                } catch (error) {
+                  playerFeedbackLockUntil = 0;
+                  statusEl.textContent = error.message;
+                }
+              };
+              waitGrid.appendChild(card);
+            });
+          }
+
+          const waitGrid = document.getElementById("waitBlookGrid");
+          Array.from(waitGrid.querySelectorAll(".avatar")).forEach((card) => {
+            const blookId = card.dataset.blookId || "";
+            const takenByOther = takenIds.has(blookId);
+            const isCurrent = !!(current && current.id === blookId);
+            card.classList.toggle("is-current", isCurrent);
+            card.classList.toggle("is-taken", takenByOther);
+            card.style.pointerEvents = takenByOther && !isCurrent ? "none" : "auto";
+            const label = card.querySelector("small");
+            if (label) label.textContent = isCurrent ? "Selected" : takenByOther ? "Taken" : "Available";
+          });
+
+          statusEl.textContent = current ? `Selected blook: ${current.name}` : "Select a blook (unique per lobby).";
+          metaEl.textContent = "Lobby waiting room";
+          return;
+        }
+
+        if (data.finished) {
+          setPlayerHudState("correct", "COMPLETE");
+          panel.innerHTML = `<h2 class="question-title">Done! Final gold: ${data.gold}</h2>`;
+          answerGrid.innerHTML = "";
+          metaEl.textContent = `Answered: ${data.answered || 0}`;
+          if (playerPoll) {
+            clearInterval(playerPoll);
+            playerPoll = null;
+          }
+          return;
+        }
+
+        if (data.chestPhase === "choose" && data.chest) {
+          setPlayerHudState("correct", "CHEST");
+          statusEl.textContent = "Choose a chest.";
+          answerGrid.innerHTML = "";
+          panel.innerHTML = `
+            <div class="chest-screen">
+              <div class="chest-banner">
+                <div class="chest-banner-inner">Choose a Chest!</div>
+              </div>
+              <div class="chest-row">
+                <button class="chest-btn" data-chest="0" type="button"><img src="/chetsicons/chest1.svg" alt="Chest 1" /></button>
+                <button class="chest-btn" data-chest="1" type="button"><img src="/chetsicons/chest2.svg" alt="Chest 2" /></button>
+                <button class="chest-btn" data-chest="2" type="button"><img src="/chetsicons/chest3.svg" alt="Chest 3" /></button>
+              </div>
+            </div>
+          `;
+          const chestButtons = Array.from(panel.querySelectorAll("[data-chest]"));
+          chestButtons.forEach((button) => {
+            button.onclick = async () => {
+              try {
+                if (Date.now() < playerFeedbackLockUntil) return;
+                playerFeedbackLockUntil = Date.now() + 450;
+                chestButtons.forEach((entry) => {
+                  entry.disabled = true;
+                  entry.classList.add("is-disabled");
+                  entry.style.pointerEvents = "none";
+                });
+                await chooseChestOption(Number(button.dataset.chest));
+                playerFeedbackLockUntil = 0;
+                await refreshPlayer();
+              } catch (error) {
+                playerFeedbackLockUntil = 0;
+                statusEl.textContent = error.message;
+                chestButtons.forEach((entry) => {
+                  entry.disabled = false;
+                  entry.classList.remove("is-disabled");
+                  entry.style.pointerEvents = "auto";
+                });
+              }
+            };
+          });
+          let meta = `${modeText} • Chest reward`;
+          if (typeof data.remainingSec === "number") meta += ` • ${data.remainingSec}s left`;
+          metaEl.textContent = meta;
+          return;
+        }
+
+        if (data.chestPhase === "result" && data.chest) {
+          const options = Array.isArray(data.chest.options) ? data.chest.options : [];
+          const selectedIndex = Number(data.chest.selectedIndex);
+          const result = data.chest.result || {};
+          const noInteraction = !!result.noInteraction;
+          const outcomeHeadline = result.headline || result.label || "Chest Result";
+          const outcomeDetail = chestOutcomeDetail(result);
+          const impactHtml = chestImpactMarkup(result);
+          const outcomeMeta = chestOutcomeMeta(result.type);
+          const outcomeClass = `chest-outcome ${outcomeMeta.className}`;
+          setPlayerHudState("correct", noInteraction ? "NO TARGET" : "CHEST");
+          answerGrid.innerHTML = "";
+          statusEl.textContent = result.text || "";
+
+          if (noInteraction) {
+            panel.innerHTML = `
+              <div class="chest-screen">
+                <div class="chest-banner">
+                  <div class="chest-banner-inner">No Players to Interact With</div>
+                </div>
+                <button id="chestNextBtn" class="chest-next-btn" type="button">Next</button>
+              </div>
+            `;
+          } else {
+            const choicesHtml = options.map((option, index) => {
+              const icon = chestIconMeta(option.type);
+              return `
+                <div class="result-choice ${index === selectedIndex ? "active" : ""}">
+                  <div class="result-icon ${icon.className}"><span>${icon.glyph}</span></div>
+                  <div class="result-label">${escapeHtml(option.label)}</div>
+                </div>
+              `;
+            }).join("");
+
+            panel.innerHTML = `
+              <div class="chest-screen" id="chestResultRoot" style="cursor:pointer;">
+                <div class="chest-banner">
+                  <div class="chest-banner-inner">Click Anywhere to Go Next</div>
+                </div>
+                <div class="chest-result-row">${choicesHtml}</div>
+                <div class="${outcomeClass}">
+                  <div class="chest-outcome-top">
+                    <span class="chest-outcome-badge">${outcomeMeta.badge}</span>
+                    <div class="chest-outcome-head">${escapeHtml(outcomeHeadline)}</div>
+                  </div>
+                  <div class="chest-note">${escapeHtml(result.text || "")}</div>
+                  ${impactHtml || ""}
+                  ${!impactHtml && outcomeDetail ? `<div class="chest-note subtle">${escapeHtml(outcomeDetail)}</div>` : ""}
+                </div>
+              </div>
+            `;
+          }
+
+          const goNext = async () => {
+            try {
+              if (Date.now() < playerFeedbackLockUntil) return;
+              playerFeedbackLockUntil = Date.now() + 350;
+              await completeChestResult();
+              playerFeedbackLockUntil = 0;
+              await refreshPlayer();
+            } catch (error) {
+              playerFeedbackLockUntil = 0;
+              statusEl.textContent = error.message;
+            }
+          };
+
+          const root = document.getElementById("chestResultRoot");
+          if (root) root.onclick = goNext;
+          const nextBtn = document.getElementById("chestNextBtn");
+          if (nextBtn) nextBtn.onclick = goNext;
+
+          let meta = `${modeText} • Chest resolved`;
+          if (typeof data.remainingSec === "number") meta += ` • ${data.remainingSec}s left`;
+          metaEl.textContent = meta;
+          return;
+        }
+
+        const media = getQuestionMedia(data.question);
+        setPlayerHudState("", modeText.toUpperCase());
+        statusEl.textContent = "";
+        const promptClass = media.imageUrl ? "prompt-wrap" : "prompt-wrap prompt-no-media";
+        panel.innerHTML = `
+          <div class="${promptClass}">
+            ${media.imageUrl ? `<div class="question-visual"><img src="${escapeHtml(media.imageUrl)}" alt="question" /></div>` : ""}
+            <h2 class="question-title">${escapeHtml(media.text || `Question ${data.questionIndex + 1}`)}</h2>
+          </div>
+        `;
+        answerGrid.innerHTML = "";
+        const colors = ["tile-0", "tile-1", "tile-2", "tile-3"];
+        const answerChoices = buildShuffledAnswerChoices(data.question, data.questionIndex);
+
+        answerChoices.forEach((choice, displayIndex) => {
+          const button = document.createElement("button");
+          button.className = `answer-tile ${colors[displayIndex % colors.length]}`;
+          button.dataset.answerIndex = String(choice.answerIndex);
+          button.innerHTML = '<span class="tile-symbol"></span><span class="tile-label"></span>';
+          button.querySelector(".tile-label").textContent = choice.answerText;
+          button.onclick = async () => {
+            try {
+              if (Date.now() < playerFeedbackLockUntil) return;
+              const selectedAnswerIndex = Number(button.dataset.answerIndex);
+              const buttons = Array.from(answerGrid.querySelectorAll(".answer-tile"));
+              buttons.forEach((el) => el.classList.add("is-locked"));
+              playerFeedbackLockUntil = Date.now() + 500;
+              const result = await api(`/api/games/${currentPlayer.code}/player/${currentPlayer.id}/answer`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ answerIndex: selectedAnswerIndex }),
+              });
+              const correct = !!result.correct;
+              const correctIndex = Number.isInteger(result.correctIndex) ? result.correctIndex : null;
+              const revealDelayMs = correct ? feedbackDelayMs : 2000;
+              const revealDelaySec = revealDelayMs / 1000;
+              playerFeedbackLockUntil = Date.now() + revealDelayMs + 80;
+              if (typeof result.totalGold === "number") {
+                document.getElementById("playerHudGold").textContent = String(result.totalGold);
+              }
+
+              buttons.forEach((el) => {
+                const btnAnswerIndex = Number(el.dataset.answerIndex);
+                const symbolEl = el.querySelector(".tile-symbol");
+                el.classList.remove("is-muted", "is-wrong", "is-right");
+                const isChosen = btnAnswerIndex === selectedAnswerIndex;
+                const isRealCorrect = correctIndex !== null ? btnAnswerIndex === correctIndex : isChosen && correct;
+                if (isRealCorrect) {
+                  el.classList.add("is-right");
+                  symbolEl.textContent = "✓";
+                } else if (isChosen && !correct) {
+                  el.classList.add("is-wrong");
+                  symbolEl.textContent = "x";
+                } else {
+                  el.classList.add("is-muted");
+                  symbolEl.textContent = "?";
+                }
+              });
+
+              setPlayerHudState(correct ? "correct" : "incorrect", correct ? "CORRECT" : "INCORRECT");
+              const feedbackEl = document.getElementById("answerFeedback");
+              const feedbackIcon = document.getElementById("feedbackIcon");
+              const feedbackText = document.getElementById("feedbackText");
+              feedbackEl.classList.remove("hidden");
+              feedbackEl.classList.toggle("correct", correct);
+              feedbackIcon.textContent = correct ? "✓" : "x";
+              if (correct && result.awaitingChestChoice) {
+                feedbackText.textContent = "Chest incoming";
+              } else {
+                feedbackText.textContent = revealDelayMs > 0
+                  ? `Wait ${revealDelaySec % 1 === 0 ? revealDelaySec.toFixed(0) : revealDelaySec} second${revealDelaySec === 1 ? "" : "s"}`
+                  : "Next question";
+              }
+
+              statusEl.textContent = correct
+                ? `+${result.gained} gold${result.awaitingChestChoice ? " | chest time" : ""}`
+                : "Incorrect";
+
+              playerFeedbackTimer = setTimeout(async () => {
+                playerFeedbackLockUntil = 0;
+                hideFeedbackBanner();
+                await refreshPlayer();
+              }, Math.max(10, revealDelayMs));
+            } catch (error) {
+              playerFeedbackLockUntil = 0;
+              setPlayerHudState("", modeText.toUpperCase());
+              hideFeedbackBanner();
+              Array.from(answerGrid.querySelectorAll(".answer-tile")).forEach((el) => {
+                el.classList.remove("is-locked", "is-muted", "is-wrong", "is-right");
+                const symbolEl = el.querySelector(".tile-symbol");
+                if (symbolEl) symbolEl.textContent = "";
+              });
+              statusEl.textContent = error.message;
+            }
+          };
+          answerGrid.appendChild(button);
+        });
+
+        let meta = `${modeText} • Question ${data.questionIndex + 1}/${data.targetQuestions}`;
+        if (typeof data.remainingSec === "number") meta += ` • ${data.remainingSec}s left`;
+        metaEl.textContent = meta;
+      } catch (error) {
+        document.getElementById("questionPanel").innerHTML = `<h2 class="question-title">${escapeHtml(error.message)}</h2>`;
+        document.getElementById("answerGrid").innerHTML = "";
+        if (playerPoll) {
+          clearInterval(playerPoll);
+          playerPoll = null;
+        }
+      }
+    }
+
+    document.getElementById("goHost").onclick = () => showView("host");
+    document.getElementById("goJoin").onclick = () => showView("join");
+    document.getElementById("backFromHost").onclick = () => showView("home");
+    document.getElementById("backFromJoin").onclick = () => showView("home");
+    document.getElementById("runSearch").onclick = searchSets;
+    document.getElementById("generateAiSet").onclick = generateAiSet;
+    document.getElementById("aiWithImages").onchange = (event) => {
+      const theme = document.getElementById("aiImageTheme");
+      theme.disabled = !event.target.checked;
+    };
+    document.getElementById("addCustomQuestion").onclick = addCustomQuestion;
+    document.getElementById("useEditorCustom").onclick = useEditorCustomSet;
+    document.getElementById("saveCustom").onclick = saveCustomSet;
+    document.getElementById("loadCustom").onclick = useSavedCustomSet;
+    document.getElementById("clearCustom").onclick = () => clearCustomEditor();
+    document.getElementById("closeSetPreview").onclick = () => {
+      document.getElementById("setPreviewWrap").classList.add("hidden");
+    };
+    document.querySelectorAll(".quick-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const query = btn.dataset.query || "";
+        document.getElementById("searchSets").value = query;
+        searchSets();
+      };
+    });
+    document.getElementById("searchSets").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") searchSets();
+    });
+
+    document.getElementById("copyJoinLink").onclick = async () => {
+      try {
+        if (!latestJoinUrl) return;
+        await navigator.clipboard.writeText(latestJoinUrl);
+        startStatus.textContent = "Join link copied.";
+      } catch {
+        startStatus.textContent = "Clipboard blocked by browser.";
+      }
+    };
+
+    document.getElementById("createHostLobby").onclick = async () => {
+      try {
+        let customSetPayload = selectedCustomSet;
+        if (!selectedSetId && customDraftQuestions.length) {
+          customSetPayload = getEditorCustomSet();
+        }
+        if (!selectedSetId && !customSetPayload) throw new Error("Select a live set or build a custom set.");
+        const usedOneTimeAiSet = Boolean(customSetPayload?.oneTime);
+        const payload = {
+          setId: selectedSetId,
+          customSet: customSetPayload,
+          gameType: document.getElementById("gameType").value,
+          questionLimit: Number(document.getElementById("questionLimit").value || 20),
+          timeLimitSec: Number(document.getElementById("timeLimit").value || 120),
+          maxPlayers: Number(document.getElementById("maxPlayers").value || 60),
+          feedbackDelaySec: Number(document.getElementById("feedbackDelay").value || 1),
+          shuffleQuestions: document.getElementById("shuffleQuestions").checked,
+        };
+        const data = await api("/api/host", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        currentHostGameCode = data.game.code;
+        showView("lobby");
+        startStatus.textContent = "Lobby ready.";
+        await refreshLobby();
+        if (lobbyPoll) clearInterval(lobbyPoll);
+        lobbyPoll = setInterval(refreshLobby, 1500);
+        if (usedOneTimeAiSet) {
+          clearCustomEditor("");
+          hostStatus.textContent = "AI one-time set was used and cleared from local editor.";
+        }
+      } catch (error) {
+        hostStatus.textContent = error.message;
+      }
+    };
+
+    document.getElementById("joinLobby").onclick = async () => {
+      try {
+        const code = document.getElementById("joinCode").value.trim().toUpperCase();
+        const name = document.getElementById("joinName").value.trim();
+        if (!code || !name) throw new Error("Code and name are required.");
+        const data = await api(`/api/games/${code}/join`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ playerName: name }),
+        });
+        currentPlayer = { code, id: data.player.playerId, name: data.player.playerName, blook: data.player.blook || null };
+        showView("playerGame");
+        await refreshPlayer();
+        if (playerPoll) clearInterval(playerPoll);
+        playerPoll = setInterval(refreshPlayer, 1200);
+      } catch (error) {
+        joinStatus.textContent = error.message;
+      }
+    };
+
+    document.getElementById("startGame").onclick = async () => {
+      try {
+        const data = await api(`/api/games/${currentHostGameCode}/start`, { method: "POST" });
+        startStatus.textContent = data.message;
+        await refreshLobby();
+      } catch (error) {
+        startStatus.textContent = error.message;
+      }
+    };
+
+    document.getElementById("endGame").onclick = async () => {
+      try {
+        const data = await api(`/api/games/${currentHostGameCode}/end`, { method: "POST" });
+        startStatus.textContent = data.message;
+        await refreshLobby();
+      } catch (error) {
+        startStatus.textContent = error.message;
+      }
+    };
+
+    document.getElementById("closeLobby").onclick = async () => {
+      if (!currentHostGameCode) return showView("home");
+      await fetch(`/api/games/${currentHostGameCode}`, { method: "DELETE" });
+      currentHostGameCode = null;
+      if (lobbyPoll) clearInterval(lobbyPoll);
+      showView("home");
+    };
+
+    document.getElementById("aiImageTheme").disabled = !document.getElementById("aiWithImages").checked;
+    setEditorSource("manual");
+    renderCustomQuestionList();
+    searchSets();
+    prefillJoinCodeFromQuery();
+  </script>
 </body>
 </html>
