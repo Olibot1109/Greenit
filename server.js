@@ -2245,6 +2245,10 @@ function routes(req, res) {
   res.on('finish', () => finishLog('finish'));
   res.on('close', () => finishLog('close'));
 
+  if (req.method === 'GET' && pathname === '/index.html') {
+    return sendText(res, 200, HTML_PAGE, 'text/html; charset=utf-8');
+  }
+
   if (req.method === 'GET' && pathname === '/') {
     return sendText(res, 200, HTML_PAGE, 'text/html; charset=utf-8');
   }
