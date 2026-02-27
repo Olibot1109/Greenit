@@ -20,6 +20,11 @@ function showView(viewId) {
   views.forEach((id) => {
     document.getElementById(id).classList.toggle("hidden", id !== viewId);
   });
+  document.body.classList.toggle("play-view-active", viewId === "playerGame");
+  if (viewId !== "playerGame") {
+    const shell = document.querySelector(".player-shell");
+    if (shell) shell.classList.remove("is-waiting");
+  }
 }
 
 async function api(url, options) {
@@ -223,6 +228,12 @@ function hideFeedbackBanner() {
   feedbackEl.classList.remove("correct");
   iconEl.textContent = "?";
   textEl.textContent = "";
+}
+
+function setPlayerShellMode(mode) {
+  const shell = document.querySelector(".player-shell");
+  if (!shell) return;
+  shell.classList.toggle("is-waiting", mode === "waiting");
 }
 
 function prefillJoinCodeFromQuery() {
@@ -773,6 +784,7 @@ async function refreshPlayer() {
     }
 
     if (data.ended) {
+      setPlayerShellMode("game");
       setPlayerHudState("incorrect", "GAME OVER");
       panel.innerHTML = '<h2 class="question-title">Host ended the game.</h2>';
       answerGrid.innerHTML = "";
@@ -785,7 +797,8 @@ async function refreshPlayer() {
     }
 
     if (data.waiting) {
-      setPlayerHudState("", "WAITING");
+      setPlayerShellMode("waiting");
+      setPlayerHudState("", "Waiting in Lobby");
       answerGrid.innerHTML = "";
       const selection = data.blookSelection || {};
       const catalog = Array.isArray(selection.catalog) ? selection.catalog : [];
@@ -805,21 +818,28 @@ async function refreshPlayer() {
 
       if (needsMount) {
         panel.innerHTML = `
-          <div class="wait-pick-wrap">
-            <div class="wait-pick-head">Waiting for host to start. Pick your blook:</div>
-            <div id="waitBlookGrid" class="grid"></div>
+          <div class="wait-lobby-main">
+            <div class="wait-blook-board">
+              <div id="waitBlookGrid" class="wait-blook-grid"></div>
+            </div>
+            <div class="wait-selected-panel">
+              <div class="wait-selected-card">
+                <div id="waitSelectedImage" class="wait-selected-image"></div>
+                <div id="waitSelectedName" class="wait-selected-name"></div>
+              </div>
+              <div class="wait-host-pill">Waiting for Host</div>
+            </div>
           </div>
         `;
         panel.dataset.waitBlookCatalogKey = catalogKey;
         const waitGrid = document.getElementById("waitBlookGrid");
         catalog.forEach((blook) => {
-          const card = document.createElement("div");
-          card.className = "avatar";
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = "wait-blook-tile";
           card.dataset.blookId = blook.id;
           card.innerHTML = `
             <img src="${blook.imageUrl}" alt="${escapeHtml(blook.name)}" />
-            <div>${escapeHtml(blook.name)}</div>
-            <small>Available</small>
           `;
           card.onclick = async () => {
             try {
@@ -839,16 +859,23 @@ async function refreshPlayer() {
       }
 
       const waitGrid = document.getElementById("waitBlookGrid");
-      Array.from(waitGrid.querySelectorAll(".avatar")).forEach((card) => {
+      Array.from(waitGrid.querySelectorAll(".wait-blook-tile")).forEach((card) => {
         const blookId = card.dataset.blookId || "";
         const takenByOther = takenIds.has(blookId);
         const isCurrent = !!(current && current.id === blookId);
         card.classList.toggle("is-current", isCurrent);
         card.classList.toggle("is-taken", takenByOther);
-        card.style.pointerEvents = takenByOther && !isCurrent ? "none" : "auto";
-        const label = card.querySelector("small");
-        if (label) label.textContent = isCurrent ? "Selected" : takenByOther ? "Taken" : "Available";
+        card.disabled = takenByOther && !isCurrent;
       });
+
+      const selectedImage = document.getElementById("waitSelectedImage");
+      const selectedName = document.getElementById("waitSelectedName");
+      if (selectedImage) {
+        selectedImage.innerHTML = current
+          ? `<img src="${escapeHtml(current.imageUrl)}" alt="${escapeHtml(current.name)}" />`
+          : '<div class="question-title">?</div>';
+      }
+      if (selectedName) selectedName.textContent = current?.name || "Pick a blook";
 
       statusEl.textContent = current ? `Selected blook: ${current.name}` : "Select a blook (unique per lobby).";
       metaEl.textContent = "Lobby waiting room";
@@ -856,6 +883,7 @@ async function refreshPlayer() {
     }
 
     if (data.finished) {
+      setPlayerShellMode("game");
       setPlayerHudState("correct", "COMPLETE");
       panel.innerHTML = `<h2 class="question-title">Done! Final gold: ${data.gold}</h2>`;
       answerGrid.innerHTML = "";
@@ -868,6 +896,7 @@ async function refreshPlayer() {
     }
 
     if (data.chestPhase === "choose" && data.chest) {
+      setPlayerShellMode("game");
       setPlayerHudState("correct", "CHEST");
       statusEl.textContent = "Choose a chest.";
       answerGrid.innerHTML = "";
@@ -915,6 +944,7 @@ async function refreshPlayer() {
     }
 
     if (data.chestPhase === "result" && data.chest) {
+      setPlayerShellMode("game");
       const options = Array.isArray(data.chest.options) ? data.chest.options : [];
       const selectedIndex = Number(data.chest.selectedIndex);
       const result = data.chest.result || {};
@@ -992,6 +1022,7 @@ async function refreshPlayer() {
     }
 
     const media = getQuestionMedia(data.question);
+    setPlayerShellMode("game");
     setPlayerHudState("", modeText.toUpperCase());
     statusEl.textContent = "";
     const promptClass = media.imageUrl ? "prompt-wrap" : "prompt-wrap prompt-no-media";
