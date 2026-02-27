@@ -1619,7 +1619,7 @@
         <div class="lobby-stage-top">
           <div class="players-badge"><span id="playerCount">0</span> players</div>
           <h2 class="mode-title">Greenit</h2>
-          <button id="startGame" class="start-btn">Start - 3s</button>
+          <button id="startGame" class="start-btn">Start</button>
         </div>
 
         <div class="host-grid">
@@ -2321,7 +2321,7 @@
 
       const startBtn = document.getElementById("startGame");
       startBtn.disabled = phase !== "lobby";
-      startBtn.textContent = phase === "lobby" ? "Start - 3s" : phase === "live" ? "Live" : "Ended";
+      startBtn.textContent = phase === "lobby" ? "Start" : phase === "live" ? "Live" : "Ended";
 
       if (data.game.state === "ended") startStatus.textContent = "Game ended for everyone.";
     }
