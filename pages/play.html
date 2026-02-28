@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Play - Greenit</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800;900&display=swap');
+
+    :root {
+      --purple: #a057bf;
+      --purple-dark: #7e3d9b;
+      --aqua: #1fc6d8;
+      --aqua-dark: #149db5;
+      --ink: #1a2a43;
+      --wood-1: #be5a2f;
+      --wood-2: #a84c27;
+      --green: #4caf50;
+      --red: #f44336;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Nunito", sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #20c5d5 0%, #1fbad2 48%, #43b8da 100%);
+    }
+
+    .play-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      color: white;
+      padding: 12px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .hud-left, .hud-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-name {
+      font-weight: 800;
+    }
+
+    .game-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px;
+      border: 4px solid rgba(255,255,255,0.65);
+      box-shadow: 0 8px 0 rgba(0,0,0,0.2);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .question-number {
+      text-align: center;
+      color: rgba(0,0,0,0.6);
+      margin-bottom: 8px;
+    }
+
+    .question-text {
+      font-family: "Baloo 2", cursive;
+      font-size: 1.5rem;
+      text-align: center;
+      margin: 0 0 16px;
+    }
+
+    .question-image {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto 16px;
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 500px) {
+      .answer-grid { grid-template-columns: 1fr; }
+    }
+
+    .answer-btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      background: linear-gradient(180deg, var(--aqua) 0%, var(--aqua-dark) 100%);
+      color: white;
+      box-shadow: 0 6px 0 #149db5;
+      transition: all 0.1s;
+    }
+
+    .answer-btn:hover { transform: translateY(-2px); }
+    .answer-btn:active { transform: translateY(4px); }
+    .answer-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .answer-btn.correct {
+      background: linear-gradient(180deg, var(--green) 0%, #388e3c 100%);
+      box-shadow: 0 6px 0 #2e7d32;
+    }
+
+    .answer-btn.wrong {
+      background: linear-gradient(180deg, var(--red) 0%, #d32f2f 100%);
+      box-shadow: 0 6px 0 #b71c1c;
+    }
+
+    .waiting-stage, .finished-stage {
+      text-align: center;
+      padding: 40px 20px;
+      color: white;
+    }
+
+    .waiting-stage h2, .finished-stage h2 {
+      font-family: "Baloo 2", cursive;
+      font-size: 2rem;
+      margin: 0 0 16px;
+    }
+
+    .blook-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 12px;
+      max-width: 600px;
+      margin: 20px auto;
+    }
+
+    .blook-card {
+      background: white;
+      border: 3px solid rgba(0,0,0,0.1);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .blook-card:hover { border-color: var(--aqua); transform: translateY(-3px); }
+    .blook-card.selected { border-color: var(--purple); background: #f3e5f5; }
+    .blook-card.taken { opacity: 0.5; cursor: not-allowed; }
+
+    .blook-card img {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-family: inherit;
+      font-weight: 700;
+      background: linear-gradient(180deg, var(--wood-1) 0%, var(--wood-2) 100%);
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #7a3a1d;
+    }
+
+    button:hover { transform: translateY(-2px); }
+    button:active { transform: translateY(2px); }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="play-hud">
+    <div class="hud-left">
+      <i class="fas fa-gamepad"></i>
+      <span id="playerName">Player</span>
+    </div>
+    <div class="hud-right">
+      <span id="questionNum">Q1</span>
+    </div>
+  </div>
+
+  <div class="game-container">
+    <!-- Waiting -->
+    <div id="waitingStage" class="waiting-stage hidden">
+      <h2>Choose Your Blook</h2>
+      <div id="blookGrid" class="blook-grid"></div>
+      <p id="waitingMessage"><i class="fas fa-spinner fa-spin"></i> Waiting for host...</p>
+    </div>
+
+    <!-- Question -->
+    <div id="questionStage" class="hidden">
+      <div class="panel">
+        <div id="questionNumber" class="question-number">Question 1</div>
+        <h2 id="questionText" class="question-text">Question?</h2>
+        <img id="questionImage" class="question-image hidden" src="" alt="" />
+        <div id="answerGrid" class="answer-grid"></div>
+      </div>
+    </div>
+
+    <!-- Puzzle (for Block Builder) -->
+    <div id="puzzleStage" class="hidden">
+      <div class="panel" style="text-align: center;">
+        <h2 style="font-family: 'Baloo 2', cursive; margin: 0 0 16px;">Puzzle Revealed!</h2>
+        <div id="puzzleInfo" style="font-size: 1.1rem; color: rgba(0,0,0,0.7);"></div>
+      </div>
+    </div>
+
+    <!-- Finished -->
+    <div id="finishedStage" class="finished-stage hidden">
+      <h2>Game Complete!</h2>
+      <p>Thanks for playing!</p>
+      <button onclick="window.location.href='/'" style="margin-top: 20px;">
+        <i class="fas fa-home"></i> Home
+      </button>
+    </div>
+  </div>
+
+  <script src="/libs/play-page.js"></script>
+</body>
+</html>

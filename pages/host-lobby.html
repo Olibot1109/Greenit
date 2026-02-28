@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Host Lobby - Greenit</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800;900&display=swap');
+
+    :root {
+      --purple: #9b59b6;
+      --purple-dark: #8e44ad;
+      --purple-darker: #7d3c98;
+      --aqua: #1fc6d8;
+      --aqua-dark: #149db5;
+      --aqua-bg: #4ecdc4;
+      --ink: #1a2a43;
+      --white: #ffffff;
+      --wood-1: #be5a2f;
+      --wood-2: #a84c27;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      color: var(--ink);
+      font-family: "Nunito", sans-serif;
+      min-height: 100vh;
+      background: var(--aqua-bg);
+    }
+
+    /* Purple Header Bar */
+    .top-header {
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 10;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .qr-box {
+      background: white;
+      padding: 8px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .qr-box canvas,
+    .qr-box img {
+      display: block;
+      width: 80px;
+      height: 80px;
+    }
+
+    .header-text {
+      color: white;
+      font-family: "Nunito", sans-serif;
+    }
+
+    .header-text .go-to {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .header-text .go-to a {
+      color: white;
+      text-decoration: underline;
+      font-weight: 800;
+    }
+
+    .header-text .enter-id {
+      font-size: 1.1rem;
+      margin-top: 4px;
+      opacity: 0.95;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .game-code-display {
+      font-family: "Baloo 2", cursive;
+      font-size: 4rem;
+      font-weight: 800;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      letter-spacing: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .copy-link {
+      color: white;
+      font-size: 0.85rem;
+      text-align: center;
+      cursor: pointer;
+      opacity: 0.9;
+      transition: opacity 0.2s;
+    }
+
+    .copy-link:hover {
+      opacity: 1;
+    }
+
+    .copy-link i {
+      font-size: 1.2rem;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .delete-btn {
+      color: white;
+      font-size: 0.85rem;
+      text-align: center;
+      cursor: pointer;
+      opacity: 0.9;
+      transition: opacity 0.2s;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .delete-btn:hover {
+      opacity: 1;
+    }
+
+    .delete-btn i {
+      font-size: 1.2rem;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 30px 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Lobby Title Section */
+    .lobby-title-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .player-count {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: white;
+      font-family: "Baloo 2", cursive;
+      font-size: 2rem;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .player-count i {
+      font-size: 1.8rem;
+    }
+
+    .lobby-title {
+      font-family: "Baloo 2", cursive;
+      font-size: 4rem;
+      font-weight: 800;
+      color: white;
+      text-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      margin: 0;
+      letter-spacing: 2px;
+    }
+
+    .start-btn {
+      background: white;
+      color: var(--ink);
+      border: none;
+      border-radius: 12px;
+      padding: 16px 32px;
+      font-family: "Baloo 2", cursive;
+      font-size: 1.6rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.2);
+      transition: all 0.1s;
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 rgba(0,0,0,0.15), 0 6px 12px rgba(0,0,0,0.2);
+    }
+
+    .start-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Players Grid */
+    .players-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .player-card {
+      background: white;
+      border-radius: 12px;
+      padding: 8px 16px 8px 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 180px;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.1);
+      position: relative;
+      transition: transform 0.2s;
+    }
+
+    .player-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .player-card.host-card {
+      background: linear-gradient(135deg, #2d5a27 0%, #3d7a35 100%);
+      color: white;
+      border: 2px solid #1a3a17;
+    }
+
+    .player-card.host-card .player-name {
+      color: white;
+    }
+
+    .blook-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .blook-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .blook-avatar i {
+      font-size: 1.5rem;
+      color: #999;
+    }
+
+    .player-info {
+      flex: 1;
+    }
+
+    .player-name {
+      font-family: "Nunito", sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    .kick-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 24px;
+      height: 24px;
+      background: #ff5252;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 0.7rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .player-card:hover .kick-btn {
+      display: flex;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .empty-state p {
+      font-size: 1.2rem;
+      margin: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .top-header {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .header-left {
+        flex-direction: column;
+      }
+
+      .game-code-display {
+        font-size: 3rem;
+      }
+
+      .lobby-title {
+        font-size: 2.5rem;
+      }
+
+      .lobby-title-section {
+        flex-direction: column;
+        gap: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Purple Header Bar -->
+  <div class="top-header">
+    <div class="header-left">
+      <div class="qr-box" id="qrWrap"></div>
+      <div class="header-text">
+        <div class="go-to">Go to <a href="/" id="siteUrlLink"></a></div>
+        <div class="enter-id">and enter Game ID:</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="game-code-display" id="gameCode">------</div>
+      <div class="header-actions">
+        <div class="copy-link" onclick="copyJoinLink()">
+          <i class="fas fa-copy"></i>
+        </div>
+        <button class="delete-btn" onclick="closeLobby()" title="Delete Lobby">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Title Section -->
+    <div class="lobby-title-section">
+      <div class="player-count">
+        <span id="playerCountNum">0</span>
+        <i class="fas fa-user"></i>
+      </div>
+      <h1 class="lobby-title">Greenit</h1>
+      <button class="start-btn" onclick="startGame()">
+        Start
+      </button>
+    </div>
+
+    <!-- Players Grid -->
+    <div id="playersContainer" class="players-container">
+      <div class="empty-state">
+        <i class="fas fa-user-clock"></i>
+        <p>Waiting for players to join...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/libs/host-lobby-page.js"></script>
+</body>
+</html>

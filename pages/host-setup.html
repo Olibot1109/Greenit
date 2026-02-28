@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Host Setup - Greenit</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800;900&display=swap');
+
+    :root {
+      --purple: #a057bf;
+      --purple-dark: #7e3d9b;
+      --aqua: #1fc6d8;
+      --aqua-dark: #149db5;
+      --ink: #1a2a43;
+      --wood-1: #be5a2f;
+      --wood-2: #a84c27;
+      --white: #ffffff;
+      --shadow: 0 8px 0 rgba(0, 0, 0, 0.22);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Nunito", sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #20c5d5 0%, #1fbad2 48%, #43b8da 100%);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding: 16px 20px;
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      border-radius: 12px;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+    }
+
+    .brand-header h1 {
+      font-family: "Baloo 2", cursive;
+      color: white;
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .back-btn:hover { background: rgba(255,255,255,0.3); }
+
+    .panel {
+      border-radius: 16px;
+      border: 4px solid rgba(255, 255, 255, 0.65);
+      background: rgba(241, 251, 255, 0.97);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-family: "Baloo 2", cursive;
+      margin: 0 0 16px;
+      color: var(--ink);
+    }
+
+    h3 {
+      font-family: "Baloo 2", cursive;
+      margin: 16px 0 12px;
+      color: var(--purple-dark);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .mode-selector {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .mode-option {
+      border: 3px solid rgba(0,0,0,0.1);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      text-align: center;
+      background: white;
+      transition: all 0.2s;
+    }
+
+    .mode-option:hover { border-color: var(--aqua); }
+    .mode-option.selected {
+      border-color: var(--wood-1);
+      background: #fff3e0;
+    }
+
+    .mode-option i {
+      font-size: 2rem;
+      color: var(--purple);
+      margin-bottom: 8px;
+    }
+
+    .mode-option h4 {
+      margin: 0;
+      font-family: "Baloo 2", cursive;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 2px solid rgba(0,0,0,0.15);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: inherit;
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--aqua);
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      background: linear-gradient(180deg, var(--wood-1) 0%, var(--wood-2) 100%);
+      color: #fff;
+      box-shadow: 0 4px 0 #7a3a1d;
+      transition: transform 0.05s ease;
+    }
+
+    button:hover { transform: translateY(-2px); }
+    button:active { transform: translateY(2px); }
+
+    button.secondary {
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      box-shadow: 0 4px 0 #5a2d70;
+    }
+
+    button.sub {
+      background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
+      box-shadow: 0 4px 0 #343a40;
+      font-size: 0.9rem;
+      padding: 8px 14px;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .quick-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .tag-btn {
+      background: rgba(160, 87, 191, 0.15);
+      border: none;
+      color: var(--purple-dark);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .tag-btn:hover { background: rgba(160, 87, 191, 0.3); }
+
+    .set-results {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 2px solid rgba(0,0,0,0.1);
+      border-radius: 10px;
+      padding: 10px;
+      background: white;
+    }
+
+    .set-card {
+      border: 2px solid rgba(0,0,0,0.1);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .set-card:hover { border-color: var(--aqua); }
+    .set-card.selected {
+      border-color: var(--wood-1);
+      background: #fff3e0;
+    }
+
+    .set-card h4 {
+      margin: 0 0 4px;
+      font-family: "Baloo 2", cursive;
+    }
+
+    .set-card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: rgba(0,0,0,0.7);
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .option-group label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: rgba(0,0,0,0.7);
+    }
+
+    .custom-question {
+      border: 2px solid rgba(0,0,0,0.1);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: white;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .status.error {
+      display: block;
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .status.success {
+      display: block;
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .ai-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .ai-options { grid-template-columns: 1fr; }
+    }
+
+    .hidden { display: none !important; }
+
+    /* Preview Modal Styles */
+    .preview-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    .preview-content {
+      background: linear-gradient(180deg, #f1fbff 0%, #ffffff 100%);
+      border-radius: 20px;
+      border: 4px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      max-width: 700px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      animation: previewSlideIn 0.3s ease;
+    }
+
+    @keyframes previewSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      border-radius: 16px 16px 0 0;
+    }
+
+    .preview-header h2 {
+      color: white;
+      margin: 0;
+      font-family: "Baloo 2", cursive;
+    }
+
+    .close-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: none;
+    }
+
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .preview-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .preview-section {
+      margin-bottom: 20px;
+      padding: 16px;
+      background: white;
+      border-radius: 12px;
+      border: 2px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .preview-section h3 {
+      margin: 0 0 12px 0;
+      color: var(--purple-dark);
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 500px) {
+      .preview-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .preview-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .preview-item:last-child {
+      border-bottom: none;
+    }
+
+    .preview-label {
+      font-weight: 700;
+      color: rgba(0, 0, 0, 0.6);
+      font-size: 0.95rem;
+    }
+
+    .preview-value {
+      font-weight: 800;
+      color: var(--ink);
+      font-size: 0.95rem;
+    }
+
+    .preview-questions {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .preview-question-item {
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      border-left: 4px solid var(--aqua);
+    }
+
+    .preview-question-item .q-image {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: white;
+      border: 2px solid rgba(0,0,0,0.1);
+    }
+
+    .preview-question-item .q-text {
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 10px;
+      font-size: 1.05rem;
+      line-height: 1.4;
+    }
+
+    .preview-question-item .q-answers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .preview-question-item .q-answer {
+      padding: 6px 12px;
+      background: white;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      border: 2px solid rgba(0,0,0,0.1);
+    }
+
+    .preview-question-item .q-answer.correct {
+      background: #e8f5e9;
+      border-color: #4caf50;
+      color: #2e7d32;
+      font-weight: 700;
+    }
+
+    .preview-empty {
+      text-align: center;
+      color: rgba(0, 0, 0, 0.5);
+      font-style: italic;
+      padding: 20px;
+    }
+
+    .preview-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 16px 24px;
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 0 0 16px 16px;
+      border-top: 2px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .preview-error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="brand-header">
+      <h1><i class="fas fa-gamepad"></i> Host Setup</h1>
+      <button class="back-btn" onclick="window.location.href='/'">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+    </div>
+
+    <!-- Game Mode Selection -->
+    <div class="panel">
+      <h2>1. Choose Game Mode</h2>
+      <div class="mode-selector">
+        <div class="mode-option selected" data-mode="goldquest" onclick="selectMode('goldquest')">
+          <i class="fas fa-skull"></i>
+          <h4>Gold Quest</h4>
+          <small>Collect gold from chests</small>
+        </div>
+      </div>
+
+      <div class="options-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="option-group" id="timeLimitGroup">
+          <label>Time (minutes)</label>
+          <input type="number" id="timeLimit" value="5" min="1" max="30" />
+        </div>
+        <div class="option-group">
+          <label>Max Players</label>
+          <input type="number" id="maxPlayers" value="60" min="1" max="120" />
+        </div>
+        <div class="option-group">
+          <label>Answer Delay (sec)</label>
+          <input type="number" id="feedbackDelay" value="1" min="0" max="5" step="0.5" />
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 12px;">
+        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap;">
+          <input type="checkbox" id="shuffleQuestions" checked />
+          <span>Shuffle question order</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Set Selection -->
+      <div class="panel">
+        <h2>2. Select Question Set</h2>
+        
+        <div id="setSelectionView">
+          <h3>Search Sets</h3>
+          <div class="search-row">
+            <input id="searchInput" placeholder="Search trivia sets..." />
+            <button onclick="searchSets()">Search</button>
+          </div>
+          <div class="quick-tags">
+            <button class="tag-btn" onclick="quickSearch('science')">Science</button>
+            <button class="tag-btn" onclick="quickSearch('history')">History</button>
+            <button class="tag-btn" onclick="quickSearch('sports')">Sports</button>
+            <button class="tag-btn" onclick="quickSearch('music')">Music</button>
+            <button class="tag-btn" onclick="quickSearch('geography')">Geography</button>
+            <button class="tag-btn" onclick="quickSearch('flags')">Flags</button>
+          </div>
+          <div id="setResults" class="set-results">
+            <p style="color: rgba(0,0,0,0.5); text-align: center;">
+              Search for trivia sets or use AI generation
+            </p>
+          </div>
+
+          <h3>AI Generate Set</h3>
+          <input id="aiPrompt" placeholder="Describe your topic (e.g., 'Grade 8 biology')" />
+          <div class="ai-options">
+            <div class="option-group">
+              <label>Questions</label>
+              <input type="number" id="aiCount" value="12" min="3" max="40" />
+            </div>
+            <div class="option-group">
+              <label>Difficulty</label>
+              <select id="aiDifficulty">
+                <option value="mixed">Mixed</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div class="option-group">
+              <label>Images</label>
+              <select id="aiImages">
+                <option value="auto">Auto</option>
+                <option value="logos">Logos</option>
+                <option value="flags">Flags</option>
+              </select>
+            </div>
+          </div>
+          <button class="secondary" onclick="generateAISet()" style="width: 100%;">
+            <i class="fas fa-magic"></i> Generate with AI
+          </button>
+          <div id="aiStatus" class="status"></div>
+        </div>
+      </div>
+
+      <!-- Custom Editor -->
+      <div class="panel">
+        <h2>Or Build Custom Set</h2>
+        <input id="customTitle" placeholder="Set title" />
+        <input id="customQuestion" placeholder="Question text" />
+        <input id="customImage" placeholder="Image URL (optional)" />
+        <textarea id="customAnswers" rows="3" placeholder="Answers (one per line)"></textarea>
+        <div style="display: flex; gap: 10px;">
+          <div style="flex: 1;">
+            <label style="font-size: 0.9rem; font-weight: 700;">Correct Answer #</label>
+            <input type="number" id="customCorrect" value="1" min="1" style="margin-top: 4px;" />
+          </div>
+          <button onclick="addQuestion()" style="align-self: flex-end;">
+            <i class="fas fa-plus"></i> Add
+          </button>
+        </div>
+        
+        <div id="customQuestionsList" style="margin-top: 12px; max-height: 200px; overflow-y: auto;"></div>
+        
+        <div style="display: flex; gap: 10px; margin-top: 12px;">
+          <button class="sub" onclick="useCustomSet()">Use This Set</button>
+          <button class="sub" onclick="clearCustom()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview & Create Buttons -->
+    <div class="panel" style="text-align: center;">
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <button onclick="previewGame()" class="secondary" style="font-size: 1.1rem; padding: 14px 32px;">
+          <i class="fas fa-eye"></i> Preview
+        </button>
+        <button id="openPreviewBtn" onclick="requestCreateGame()" style="font-size: 1.3rem; padding: 16px 40px;">
+          <i class="fas fa-play-circle"></i> Preview & Create Game Lobby
+        </button>
+      </div>
+      <div id="createStatus" class="status"></div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="preview-modal hidden">
+      <div class="preview-content">
+        <div class="preview-header">
+          <h2><i class="fas fa-eye"></i> Game Preview</h2>
+          <button class="close-btn" onclick="closePreview()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="preview-body">
+          <div class="preview-section">
+            <h3><i class="fas fa-gamepad"></i> Game Mode</h3>
+            <div class="preview-item">
+              <span class="preview-label">Mode:</span>
+              <span class="preview-value" id="previewMode">Gold Quest</span>
+            </div>
+          </div>
+
+          <div class="preview-section">
+            <h3><i class="fas fa-cog"></i> Game Settings</h3>
+            <div class="preview-grid">
+              <div class="preview-item">
+                <span class="preview-label">Time Limit:</span>
+                <span class="preview-value" id="previewTime">5 minutes</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Max Players:</span>
+                <span class="preview-value" id="previewMaxPlayers">60</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Answer Delay:</span>
+                <span class="preview-value" id="previewDelay">1 second</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Shuffle Questions:</span>
+                <span class="preview-value" id="previewShuffle">Yes</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="preview-section">
+            <h3><i class="fas fa-question-circle"></i> Question Set</h3>
+            <div class="preview-item">
+              <span class="preview-label">Set Name:</span>
+              <span class="preview-value" id="previewSetName">-</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">Question Count:</span>
+              <span class="preview-value" id="previewQuestionCount">-</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">Source:</span>
+              <span class="preview-value" id="previewSetSource">-</span>
+            </div>
+          </div>
+
+          <div class="preview-section" id="previewQuestionsSection">
+            <h3><i class="fas fa-list"></i> Sample Questions</h3>
+            <div id="previewQuestionsList" class="preview-questions">
+              <p class="preview-empty">No questions to preview</p>
+            </div>
+          </div>
+        </div>
+        <div class="preview-footer">
+          <button class="secondary" onclick="closePreview()">
+            <i class="fas fa-times"></i> Close
+          </button>
+          <button id="confirmCreateBtn" onclick="createGameFromPreview(this)">
+            <i class="fas fa-play-circle"></i> Create Game Lobby
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/libs/host-setup-page.js"></script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Waiting in Lobby - Greenit</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800;900&display=swap');
+
+    :root {
+      --purple: #9b59b6;
+      --purple-dark: #8e44ad;
+      --purple-darker: #7d3c98;
+      --aqua: #1fc6d8;
+      --aqua-dark: #149db5;
+      --aqua-bg: #4ecdc4;
+      --ink: #1a2a43;
+      --wood-1: #be5a2f;
+      --wood-2: #a84c27;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      color: var(--ink);
+      font-family: "Nunito", sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #5dade2 0%, #4ecdc4 100%);
+    }
+
+    /* Purple Header Bar */
+    .top-header {
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 10;
+    }
+
+    .player-name-display {
+      color: white;
+      font-family: "Nunito", sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      min-width: 120px;
+    }
+
+    .header-title {
+      color: white;
+      font-family: "Baloo 2", cursive;
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      flex: 1;
+    }
+
+    .settings-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.8rem;
+      cursor: pointer;
+      min-width: 120px;
+      text-align: right;
+      padding: 0;
+      box-shadow: none;
+    }
+    /* Main Content */
+    .main-content {
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      gap: 24px;
+      min-height: calc(100vh - 70px);
+    }
+
+    /* Left Panel - Blook Grid */
+    .blook-selection-panel {
+      flex: 1;
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 0 rgba(0, 0, 0, 0.2);
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+
+    .blook-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 12px;
+    }
+
+    .blook-option {
+      background: white;
+      border-radius: 12px;
+      padding: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.1);
+    }
+
+    .blook-option:hover {
+      box-shadow: 0 6px 0 rgba(0,0,0,0.1);
+    }
+
+    .blook-option.selected {
+      background: #fff3e0;
+      border: 3px solid var(--wood-1);
+      box-shadow: 0 3px 0 var(--wood-2);
+    }
+
+    .blook-option.taken {
+      opacity: 0.4;
+      cursor: not-allowed;
+      filter: grayscale(0.5);
+    }
+
+    .blook-option img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    /* Right Panel - Preview */
+    .preview-panel {
+      width: 350px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .blook-preview {
+      background: linear-gradient(180deg, #f1c40f 0%, #f39c12 100%);
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 8px 0 rgba(0, 0, 0, 0.2);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .blook-preview::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background: linear-gradient(180deg, rgba(76, 175, 80, 0.3) 0%, rgba(76, 175, 80, 0.6) 100%);
+      border-radius: 0 0 20px 20px;
+    }
+
+    .preview-blook-name {
+      font-family: "Baloo 2", cursive;
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .preview-image {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .preview-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    }
+
+    /* Waiting Indicator */
+    .waiting-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.9);
+      padding: 16px 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+    }
+
+    .waiting-indicator i {
+      font-size: 2rem;
+      color: var(--purple);
+    }
+
+    .waiting-text {
+      font-family: "Baloo 2", cursive;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    /* Loading State */
+    .loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--aqua-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .loading-spinner {
+      font-size: 4rem;
+      color: white;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      color: white;
+      font-family: "Baloo 2", cursive;
+      font-size: 2rem;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Error State */
+    .error-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--aqua-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .error-box {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+      max-width: 500px;
+    }
+
+    .error-box i {
+      font-size: 4rem;
+      color: #e74c3c;
+      margin-bottom: 20px;
+    }
+
+    .error-box h2 {
+      font-family: "Baloo 2", cursive;
+      margin: 0 0 16px;
+      color: var(--ink);
+    }
+
+    .error-box p {
+      color: rgba(0,0,0,0.6);
+      margin-bottom: 24px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 28px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      background: linear-gradient(180deg, var(--wood-1) 0%, var(--wood-2) 100%);
+      color: #fff;
+      box-shadow: 0 4px 0 #7a3a1d;
+      transition: all 0.1s;
+    }
+
+    .hidden { display: none !important; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .main-content {
+        flex-direction: column;
+      }
+
+      .preview-panel {
+        width: 100%;
+        order: -1;
+      }
+
+      .blook-preview {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading State -->
+  <div id="loadingState" class="loading-container">
+    <div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>
+    <div class="loading-text">Joining Game...</div>
+  </div>
+
+  <!-- Error State -->
+  <div id="errorState" class="error-container hidden">
+    <div class="error-box">
+      <i class="fas fa-exclamation-circle"></i>
+      <h2>Oops!</h2>
+      <p id="errorText">Error joining game</p>
+      <button onclick="window.location.href='/'">Back to Home</button>
+    </div>
+  </div>
+
+  <!-- Main Lobby -->
+  <div id="lobbyContent" class="hidden">
+    <!-- Purple Header -->
+    <div class="top-header">
+      <div class="player-name-display" id="playerNameDisplay">Player</div>
+      <div class="header-title">Waiting in Lobby</div>
+      <button class="settings-btn" onclick="leaveGame()" title="Leave Game">
+        <i class="fas fa-close"></i>
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Left: Blook Selection Grid -->
+      <div class="blook-selection-panel">
+        <div id="blookGrid" class="blook-grid">
+          <!-- Blooks rendered here -->
+        </div>
+      </div>
+
+      <!-- Right: Preview Panel -->
+      <div class="preview-panel">
+        <div class="blook-preview">
+          <div class="preview-blook-name" id="previewName">Select a Blook</div>
+          <div class="preview-image" id="previewImage">
+            <img src="/pfp/Alpaca.svg" alt="Select a blook" />
+          </div>
+        </div>
+
+        <div class="waiting-indicator">
+          <i class="fas fa-gamepad"></i>
+          <div class="waiting-text">Waiting for Host</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/libs/lobby-page.js"></script>
+</body>
+</html>

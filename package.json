@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --check server.js"
+    "test": "node --check server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "nodemon": "^2.0.20"
   },
   "keywords": [],
   "author": "",
