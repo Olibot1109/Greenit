@@ -5,8 +5,37 @@ const path = require('path');
 const { URL } = require('url');
 
 const PORT = process.env.PORT || 3000;
-const HTML_PAGE = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+const HTML_DIR = path.join(__dirname, 'pagess');
+const HTML_PAGE = fs.readFileSync(path.join(HTML_DIR, 'index.html'), 'utf8');
 const HTML_JS = fs.readFileSync(path.join(__dirname, 'script.js'), 'utf8');
+const ENTRY_PAGE_OVERRIDES = Object.freeze({
+  'goldquest.html': 'goldquest',
+  'goldquesthost.html': 'goldquesthost',
+  'hostgoldquest.html': 'goldquesthost',
+  'hostgoldqueest.html': 'goldquesthost',
+  'assemble.html': 'assemble',
+  'hostassemble.html': 'hostassemble',
+});
+const ENTRY_HTML_FILES = new Set(Object.keys(ENTRY_PAGE_OVERRIDES));
+const ENTRY_HTML_CACHE = new Map();
+
+function renderEntryHtml(entry) {
+  const safeEntry = String(entry || '').trim().toLowerCase();
+  if (!safeEntry) return HTML_PAGE;
+  const cached = ENTRY_HTML_CACHE.get(safeEntry);
+  if (cached) return cached;
+  const entryScript = `<script>window.__GREENIT_ENTRY_OVERRIDE=${JSON.stringify(safeEntry)};</script>`;
+  const standaloneTag = '<script src="/pages/goldquest.js"></script>';
+  const html = HTML_PAGE
+    .replace('<script src="/pages/goldquest-core.js"></script>', '')
+    .replace('<script src="/pages/goldquest.js"></script>', '')
+    .replace('<script src="script.js"></script>', '')
+    .replace('</body>', `  ${entryScript}\n  ${standaloneTag}\n</body>`);
+  ENTRY_HTML_CACHE.set(safeEntry, html);
+  return html;
+}
+const PFP_DIR = path.join(__dirname, 'pfp');
+const MP3_DIR = path.join(__dirname, 'mp3');
 const blookSeeds = [
   'Nova',
   'Atlas',
@@ -33,12 +62,32 @@ const blookSeeds = [
   'Ember',
 ];
 
-const blookCatalog = blookSeeds.map((name, index) => ({
+function loadLocalBlookCatalog() {
+  try {
+    const files = fs.readdirSync(PFP_DIR)
+      .filter((entry) => /\.svg$/i.test(String(entry || '')))
+      .sort((a, b) => a.localeCompare(b));
+    return files.map((file, index) => {
+      const name = String(file).replace(/\.svg$/i, '');
+      return {
+        id: `blook-${index + 1}`,
+        name,
+        rarity: 'Blook',
+        imageUrl: `/pfp/${encodeURIComponent(file)}`,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+const localBlookCatalog = loadLocalBlookCatalog();
+const blookCatalog = (localBlookCatalog.length ? localBlookCatalog : blookSeeds.map((name, index) => ({
   id: `blook-${index + 1}`,
   name,
   rarity: 'Blook',
   imageUrl: `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(name)}`,
-}));
+})));
 
 const avatarCatalog = blookCatalog;
 
@@ -57,6 +106,38 @@ const LOG_LEVEL = String(process.env.LOG_LEVEL || 'info').toLowerCase();
 const ACTIVE_LOG_LEVEL = LOG_LEVELS[LOG_LEVEL] ? LOG_LEVEL : 'info';
 const MAX_LOG_CHARS = Math.max(200, Math.min(Number(process.env.LOG_MAX_CHARS) || 1800, 20_000));
 const IMAGE_FALLBACK_LOG_LEVEL = String(process.env.IMAGE_FALLBACK_LOG_LEVEL || 'debug').toLowerCase();
+const LOG_COLOR_MODE = String(process.env.LOG_COLOR || 'auto').toLowerCase();
+
+const ANSI = {
+  reset: '\x1b[0m',
+  dim: '\x1b[2m',
+  cyan: '\x1b[36m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+};
+
+function shouldUseLogColor() {
+  if (LOG_COLOR_MODE === 'off' || process.env.NO_COLOR !== undefined) return false;
+  if (LOG_COLOR_MODE === 'on') return true;
+  return Boolean(process.stdout?.isTTY || process.stderr?.isTTY || Number(process.env.FORCE_COLOR || 0) > 0);
+}
+
+const USE_LOG_COLOR = shouldUseLogColor();
+
+function colorize(text, colorCode) {
+  if (!USE_LOG_COLOR || !colorCode) return text;
+  return `${colorCode}${text}${ANSI.reset}`;
+}
+
+function colorForLevel(level) {
+  const normalized = String(level || '').toLowerCase();
+  if (normalized === 'debug') return ANSI.cyan;
+  if (normalized === 'info') return ANSI.green;
+  if (normalized === 'warn') return ANSI.yellow;
+  if (normalized === 'error') return ANSI.red;
+  return '';
+}
 
 function shouldLog(level) {
   const wanted = LOG_LEVELS[String(level || '').toLowerCase()] || LOG_LEVELS.info;
@@ -81,7 +162,13 @@ function safeLogMeta(meta) {
 function log(level, message, meta) {
   if (!shouldLog(level)) return;
   const stamp = new Date().toISOString();
-  const line = `[${stamp}] [${String(level).toUpperCase()}] ${message}${meta === undefined ? '' : ` ${safeLogMeta(meta)}`}`;
+  const levelText = String(level).toUpperCase();
+  const levelColor = colorForLevel(level);
+  const stampPart = colorize(`[${stamp}]`, ANSI.dim);
+  const levelPart = colorize(`[${levelText}]`, levelColor);
+  const messagePart = colorize(String(message || ''), levelColor);
+  const metaPart = meta === undefined ? '' : ` ${colorize(safeLogMeta(meta), ANSI.dim)}`;
+  const line = `${stampPart} ${levelPart} ${messagePart}${metaPart}`;
   if (level === 'warn' || level === 'error') {
     console.error(line);
     return;
@@ -265,6 +352,25 @@ function randomHostPin() {
 
 function randomId() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+function normalizeGold(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.floor(numeric));
+}
+
+function clampPlayerGold(player) {
+  if (!player || typeof player !== 'object') return 0;
+  player.gold = normalizeGold(player.gold);
+  return player.gold;
+}
+
+function clampGameGold(game) {
+  if (!game || !Array.isArray(game.players)) return;
+  game.players.forEach((entry) => {
+    clampPlayerGold(entry);
+  });
 }
 
 function shuffle(arr) {
@@ -1853,8 +1959,10 @@ function validateHostPayload(body) {
     if (err) return err;
   }
 
-  const gameType = body.gameType || 'question';
-  if (!['question', 'timed'].includes(gameType)) return 'Game type must be question or timed.';
+  const gameType = body.gameType || 'timed';
+  if (!['question', 'timed', 'hybrid'].includes(gameType)) return 'Game type must be question, timed, or hybrid.';
+  const gameTypeFamily = body.gameTypeFamily || 'goldquest';
+  if (!['goldquest', 'assemble'].includes(gameTypeFamily)) return 'Type must be goldquest or assemble.';
 
   if (body.maxPlayers !== undefined) {
     const maxPlayers = Number(body.maxPlayers);
@@ -1867,6 +1975,13 @@ function validateHostPayload(body) {
     const delay = Number(body.feedbackDelaySec);
     if (!Number.isFinite(delay) || delay < 0 || delay > 5) {
       return 'Feedback delay must be between 0 and 5 seconds.';
+    }
+  }
+
+  if (body.timeLimitSec !== undefined) {
+    const timeLimitSec = Number(body.timeLimitSec);
+    if (!Number.isFinite(timeLimitSec) || timeLimitSec < 60 || timeLimitSec > 1800) {
+      return 'Time must be between 1 and 30 minutes.';
     }
   }
 
@@ -1903,6 +2018,7 @@ async function resolveSet({ setId, customSet }) {
 async function createHostedGame({
   setId,
   customSet,
+  gameTypeFamily,
   gameType,
   questionLimit,
   timeLimitSec,
@@ -1947,9 +2063,10 @@ async function createHostedGame({
   }
 
   const modeSettings = {
-    gameType: gameType || 'question',
+    gameTypeFamily: gameTypeFamily || 'goldquest',
+    gameType: gameType || 'timed',
     questionLimit: Math.max(1, Math.min(Number(questionLimit) || selected.questions.length, selected.questions.length)),
-    timeLimitSec: Math.max(30, Math.min(Number(timeLimitSec) || 120, 900)),
+    timeLimitSec: Math.max(60, Math.min(Number(timeLimitSec) || 120, 1800)),
     maxPlayers: Math.max(1, Math.min(Number(maxPlayers) || 60, 120)),
     feedbackDelaySec: Math.max(0, Math.min(Number(feedbackDelaySec) || 1, 5)),
     shuffleQuestions: shouldShuffle,
@@ -1958,7 +2075,7 @@ async function createHostedGame({
   const game = {
     code,
     hostPin: randomHostPin(),
-    mode: modeSettings.gameType === 'timed' ? 'Time Attack' : 'Gold Quest',
+    mode: modeSettings.gameTypeFamily === 'assemble' ? 'Block Builder' : 'Gold Quest',
     set: selected,
     state: 'lobby',
     settings: modeSettings,
@@ -1968,6 +2085,7 @@ async function createHostedGame({
     endedAt: null,
     eventLog: [],
     players: [],
+    puzzle: modeSettings.gameTypeFamily === 'assemble' ? createPuzzleState(selected) : null,
   };
 
   games.set(code, game);
@@ -1984,6 +2102,8 @@ async function createHostedGame({
 function chestOptionLabel(option) {
   if (option.type === 'bonus_flat') return `+ ${option.value} Gold`;
   if (option.type === 'bonus_percent') return `+ ${option.percent}%`;
+  if (option.type === 'double') return 'DOUBLE!';
+  if (option.type === 'triple') return 'TRIPLE!';
   if (option.type === 'lose_percent') return `Lose ${option.percent}%`;
   if (option.type === 'lose_flat') return `- ${option.value} Gold`;
   if (option.type === 'take_percent') return `Take ${option.percent}%`;
@@ -1992,23 +2112,25 @@ function chestOptionLabel(option) {
 }
 
 function makeChestChoices() {
-  const percentValues = [10, 15, 25, 40, 50];
+  const percentValues = [15, 25, 40, 50, 75];
   const gainOptions = [
-    { type: 'bonus_flat', value: Math.floor(20 + Math.random() * 71) },
-    { type: 'bonus_flat', value: Math.floor(15 + Math.random() * 41) },
+    { type: 'bonus_flat', value: Math.floor(40 + Math.random() * 141) },
+    { type: 'bonus_flat', value: Math.floor(35 + Math.random() * 96) },
     { type: 'bonus_percent', percent: sample(percentValues) },
+    { type: 'double' },
+    { type: 'triple' },
   ];
   const riskOptions = [
     { type: 'lose_percent', percent: sample([10, 25, 50]) },
-    { type: 'lose_flat', value: Math.floor(10 + Math.random() * 41) },
+    { type: 'lose_flat', value: Math.floor(15 + Math.random() * 66) },
   ];
   const interactionOptions = [
-    { type: 'take_percent', percent: sample([10, 25, 40]) },
+    { type: 'take_percent', percent: sample([15, 25, 40, 60]) },
     { type: 'swap' },
   ];
 
   const picks = [sample(gainOptions), sample(riskOptions), sample(interactionOptions)];
-  if (Math.random() < 0.35) {
+  if (Math.random() < 0.5) {
     picks[1] = sample(gainOptions);
   }
 
@@ -2024,48 +2146,212 @@ function createPendingChest() {
   };
 }
 
-function resolveChestChoice(game, player, option) {
+function createPuzzleState(set) {
+  const rows = 4;
+  const cols = 4;
+  const totalTiles = rows * cols;
+  const imageUrl = (Array.isArray(set?.questions) ? set.questions : []).find((question) => String(question?.imageUrl || '').trim())?.imageUrl || null;
+  const revealOrder = shuffle(Array.from({ length: totalTiles }, (_, index) => index));
+  return {
+    rows,
+    cols,
+    totalTiles,
+    imageUrl,
+    revealOrder,
+    revealedTileIndices: [],
+    lastRevealedTile: null,
+    completedAt: null,
+  };
+}
+
+function getPuzzlePayload(game) {
+  const puzzle = game?.puzzle;
+  if (!puzzle) return null;
+  const rows = Math.max(1, Number(puzzle.rows) || 4);
+  const cols = Math.max(1, Number(puzzle.cols) || 4);
+  const totalTiles = Math.max(1, Number(puzzle.totalTiles) || rows * cols);
+  const revealed = Array.isArray(puzzle.revealedTileIndices) ? puzzle.revealedTileIndices.map((index) => Number(index)).filter(Number.isInteger) : [];
+  const revealedSet = new Set(revealed);
+  return {
+    rows,
+    cols,
+    totalTiles,
+    imageUrl: puzzle.imageUrl || null,
+    revealedCount: revealed.length,
+    completed: revealed.length >= totalTiles,
+    lastRevealedTile: Number.isInteger(puzzle.lastRevealedTile) ? puzzle.lastRevealedTile : null,
+    tiles: Array.from({ length: totalTiles }, (_, index) => ({
+      index,
+      number: index + 1,
+      revealed: revealedSet.has(index),
+      row: Math.floor(index / cols),
+      col: index % cols,
+    })),
+  };
+}
+
+function revealNextPuzzleTile(game) {
+  const puzzle = game?.puzzle;
+  if (!puzzle) return null;
+  if (!Array.isArray(puzzle.revealedTileIndices)) puzzle.revealedTileIndices = [];
+  if (!Array.isArray(puzzle.revealOrder)) puzzle.revealOrder = [];
+  const revealedSet = new Set(puzzle.revealedTileIndices.map((index) => Number(index)).filter(Number.isInteger));
+  let tileIndex = null;
+  for (const candidate of puzzle.revealOrder) {
+    const normalized = Number(candidate);
+    if (!Number.isInteger(normalized)) continue;
+    if (revealedSet.has(normalized)) continue;
+    tileIndex = normalized;
+    break;
+  }
+  if (!Number.isInteger(tileIndex)) {
+    return {
+      tileIndex: null,
+      tileNumber: null,
+      revealedCount: revealedSet.size,
+      totalTiles: puzzle.totalTiles,
+      completed: revealedSet.size >= puzzle.totalTiles,
+    };
+  }
+  puzzle.revealedTileIndices.push(tileIndex);
+  puzzle.lastRevealedTile = tileIndex;
+  const revealedCount = puzzle.revealedTileIndices.length;
+  const completed = revealedCount >= puzzle.totalTiles;
+  if (completed && !puzzle.completedAt) puzzle.completedAt = new Date().toISOString();
+  return {
+    tileIndex,
+    tileNumber: tileIndex + 1,
+    revealedCount,
+    totalTiles: puzzle.totalTiles,
+    completed,
+  };
+}
+
+function getChestTargetChoices(game, player) {
+  clampGameGold(game);
+  return game.players
+    .filter((entry) => entry.playerId !== player.playerId)
+    .map((entry) => ({
+      playerId: entry.playerId,
+      playerName: entry.playerName,
+      gold: normalizeGold(entry.gold),
+      blook: entry.blook || null,
+    }));
+}
+
+function getChestPayload(game, player) {
+  const pending = player.pendingChest;
+  if (!pending) return null;
+  const payload = {
+    options: pending.options.map((option) => ({
+      label: option.label,
+      type: option.type,
+    })),
+    selectedIndex: pending.selectedIndex,
+    result: pending.result,
+  };
+  if (pending.phase === 'target') {
+    const selected = Number.isInteger(pending.selectedIndex) ? pending.options[pending.selectedIndex] : null;
+    payload.targetAction = selected?.type || null;
+    payload.targetChoices = getChestTargetChoices(game, player);
+    payload.allowSkip = true;
+  }
+  return payload;
+}
+
+function createChestSkipResult(player, option) {
+  const playerBefore = clampPlayerGold(player);
+  return {
+    type: 'skipped',
+    label: option.label,
+    headline: 'SKIPPED',
+    text: 'You skipped this interaction.',
+    delta: 0,
+    playerBefore,
+    playerAfter: playerBefore,
+    eventText: `${player.playerName} skipped a ${option.type === 'swap' ? 'swap' : 'steal'} chest.`,
+  };
+}
+
+const INTERACTION_CHEST_TYPES = new Set(['take_percent', 'swap']);
+
+function resolveChestChoice(game, player, option, targetPlayerId = null) {
   const opponents = game.players.filter((p) => p.playerId !== player.playerId);
-  const target = opponents.length ? sample(opponents) : null;
-  const playerBefore = player.gold;
+  const target = targetPlayerId
+    ? opponents.find((entry) => entry.playerId === targetPlayerId) || null
+    : (opponents.length ? sample(opponents) : null);
+  const playerBefore = clampPlayerGold(player);
+  const targetGoldBefore = target ? clampPlayerGold(target) : null;
+  const bonusFlat = normalizeGold(option.value);
+  const bonusPercent = normalizeGold(option.percent);
 
   if (option.type === 'bonus_flat') {
-    player.gold += option.value;
+    player.gold = normalizeGold(playerBefore + bonusFlat);
     return {
       type: option.type,
       label: option.label,
-      headline: `+${option.value} GOLD`,
-      text: `+${option.value} gold`,
-      delta: option.value,
+      headline: `+${bonusFlat} GOLD`,
+      text: `+${bonusFlat} gold`,
+      delta: bonusFlat,
       playerBefore,
       playerAfter: player.gold,
-      eventText: `${player.playerName} gained ${option.value} gold from a chest.`,
+      eventText: `${player.playerName} gained ${bonusFlat} gold from a chest.`,
     };
   }
 
   if (option.type === 'bonus_percent') {
-    const gain = Math.max(1, Math.floor(player.gold * (option.percent / 100)));
-    player.gold += gain;
+    const gain = Math.max(1, Math.floor(playerBefore * (bonusPercent / 100)));
+    player.gold = normalizeGold(playerBefore + gain);
     return {
       type: option.type,
       label: option.label,
-      headline: `+${option.percent}% BONUS`,
-      text: `+${gain} gold (${option.percent}%)`,
+      headline: `+${bonusPercent}% BONUS`,
+      text: `+${gain} gold (${bonusPercent}%)`,
       delta: gain,
       playerBefore,
       playerAfter: player.gold,
-      eventText: `${player.playerName} gained ${gain} gold from a ${option.percent}% chest.`,
+      eventText: `${player.playerName} gained ${gain} gold from a ${bonusPercent}% chest.`,
+    };
+  }
+
+  if (option.type === 'double') {
+    const gain = playerBefore > 0 ? playerBefore : Math.floor(30 + Math.random() * 41);
+    player.gold = normalizeGold(playerBefore + gain);
+    return {
+      type: option.type,
+      label: option.label,
+      headline: 'DOUBLE!',
+      text: `+${gain} gold`,
+      delta: gain,
+      playerBefore,
+      playerAfter: player.gold,
+      eventText: `${player.playerName} doubled for +${gain} gold from a chest.`,
+    };
+  }
+
+  if (option.type === 'triple') {
+    const gain = playerBefore > 0 ? (playerBefore * 2) : Math.floor(75 + Math.random() * 71);
+    player.gold = normalizeGold(playerBefore + gain);
+    return {
+      type: option.type,
+      label: option.label,
+      headline: 'TRIPLE!',
+      text: `+${gain} gold`,
+      delta: gain,
+      playerBefore,
+      playerAfter: player.gold,
+      eventText: `${player.playerName} tripled for +${gain} gold from a chest.`,
     };
   }
 
   if (option.type === 'lose_percent') {
-    const loss = Math.min(player.gold, Math.floor(player.gold * (option.percent / 100)));
-    player.gold -= loss;
+    const loss = Math.min(playerBefore, Math.floor(playerBefore * (bonusPercent / 100)));
+    player.gold = normalizeGold(playerBefore - loss);
     return {
       type: option.type,
       label: option.label,
-      headline: `LOSE ${option.percent}%`,
-      text: `-${loss} gold (${option.percent}%)`,
+      headline: `LOSE ${bonusPercent}%`,
+      text: `-${loss} gold (${bonusPercent}%)`,
       delta: -loss,
       playerBefore,
       playerAfter: player.gold,
@@ -2074,8 +2360,8 @@ function resolveChestChoice(game, player, option) {
   }
 
   if (option.type === 'lose_flat') {
-    const loss = Math.min(player.gold, option.value);
-    player.gold -= loss;
+    const loss = Math.min(playerBefore, bonusFlat);
+    player.gold = normalizeGold(playerBefore - loss);
     return {
       type: option.type,
       label: option.label,
@@ -2102,7 +2388,7 @@ function resolveChestChoice(game, player, option) {
         eventText: `${player.playerName} rolled an interaction chest but had no opponents.`,
       };
     }
-    const steal = Math.min(target.gold, Math.max(1, Math.floor(target.gold * (option.percent / 100))));
+    const steal = Math.min(targetGoldBefore, Math.max(1, Math.floor(targetGoldBefore * (bonusPercent / 100))));
     if (steal <= 0) {
       return {
         type: 'no_effect',
@@ -2113,23 +2399,23 @@ function resolveChestChoice(game, player, option) {
         playerBefore,
         playerAfter: player.gold,
         target: target.playerName,
-        targetBefore: target.gold,
-        targetAfter: target.gold,
+        targetBefore: targetGoldBefore,
+        targetAfter: targetGoldBefore,
         eventText: `${player.playerName} tried to steal from ${target.playerName}, but no gold was available.`,
       };
     }
-    target.gold -= steal;
-    player.gold += steal;
+    target.gold = normalizeGold(targetGoldBefore - steal);
+    player.gold = normalizeGold(playerBefore + steal);
     return {
       type: option.type,
       label: option.label,
-      headline: `TAKE ${option.percent}%`,
+      headline: `TAKE ${bonusPercent}%`,
       text: `Took ${steal} gold from ${target.playerName}`,
       delta: steal,
       playerBefore,
       playerAfter: player.gold,
       target: target.playerName,
-      targetBefore: target.gold + steal,
+      targetBefore: targetGoldBefore,
       targetAfter: target.gold,
       eventText: `${player.playerName} took ${steal} gold from ${target.playerName}.`,
     };
@@ -2149,10 +2435,9 @@ function resolveChestChoice(game, player, option) {
         eventText: `${player.playerName} rolled SWAP but had no opponents.`,
       };
     }
-    const original = player.gold;
-    const targetBefore = target.gold;
-    player.gold = target.gold;
-    target.gold = original;
+    const original = playerBefore;
+    player.gold = normalizeGold(targetGoldBefore);
+    target.gold = normalizeGold(original);
     return {
       type: option.type,
       label: option.label,
@@ -2162,7 +2447,7 @@ function resolveChestChoice(game, player, option) {
       playerBefore: original,
       playerAfter: player.gold,
       target: target.playerName,
-      targetBefore,
+      targetBefore: targetGoldBefore,
       targetAfter: target.gold,
       eventText: `${player.playerName} swapped gold totals with ${target.playerName}.`,
     };
@@ -2181,8 +2466,9 @@ function resolveChestChoice(game, player, option) {
 }
 
 function publicGame(game) {
+  clampGameGold(game);
   const remainingSec =
-    game.state === 'live' && game.settings.gameType === 'timed' && game.endsAt
+    game.state === 'live' && ['timed', 'hybrid'].includes(game.settings.gameType) && game.endsAt
       ? Math.max(0, Math.floor((new Date(game.endsAt).getTime() - Date.now()) / 1000))
       : null;
 
@@ -2193,17 +2479,41 @@ function publicGame(game) {
     state: game.state,
     setTitle: game.set.title,
     settings: game.settings,
+    puzzle: getPuzzlePayload(game),
     remainingSec,
     players: game.players.map((p) => ({
       playerId: p.playerId,
       playerName: p.playerName,
       blook: p.blook || null,
       avatar: p.blook || null,
-      gold: p.gold,
+      gold: normalizeGold(p.gold),
       answered: p.questionIndex,
     })),
     eventLog: game.eventLog.slice(-8),
   };
+}
+
+function isLiveGameTimerExpired(game) {
+  if (!game || game.state !== 'live') return false;
+  if (!['timed', 'hybrid'].includes(game.settings?.gameType)) return false;
+  if (!game.endsAt) return false;
+  const endsAtMs = new Date(game.endsAt).getTime();
+  if (!Number.isFinite(endsAtMs)) return false;
+  return Date.now() >= endsAtMs;
+}
+
+function endGameWhenTimerExpires(game, { requestId } = {}) {
+  if (!isLiveGameTimerExpired(game)) return false;
+  game.state = 'ended';
+  game.endedAt = game.endedAt || new Date().toISOString();
+  game.eventLog.push({ at: game.endedAt, type: 'ended', text: 'Time is up. Game ended for everyone.' });
+  logInfo('game.ended.timer', {
+    requestId: requestId || null,
+    code: game.code,
+    players: game.players.length,
+    endedAt: game.endedAt,
+  });
+  return true;
 }
 
 function routes(req, res) {
@@ -2249,6 +2559,35 @@ function routes(req, res) {
     return sendText(res, 200, HTML_JS, 'text/javascript; charset=utf-8');
   }
 
+  if (req.method === 'GET' && pathname.startsWith('/pages/')) {
+    const fileName = path.basename(pathname);
+    if (!/^[a-zA-Z0-9._-]+\.js$/.test(fileName)) {
+      return sendJson(res, 400, { error: 'Invalid page script path' });
+    }
+    const scriptPath = path.join(__dirname, 'pages', fileName);
+    return fs.readFile(scriptPath, 'utf8', (error, data) => {
+      if (error) return sendJson(res, 404, { error: 'Page script not found' });
+      return sendText(res, 200, data, 'text/javascript; charset=utf-8');
+    });
+  }
+
+  if (req.method === 'GET' && pathname === '/index.html') {
+    return sendText(res, 200, HTML_PAGE, 'text/html; charset=utf-8');
+  }
+
+  if (req.method === 'GET' && ENTRY_HTML_FILES.has(pathname.replace(/^\//, ''))) {
+    const fileName = pathname.replace(/^\//, '');
+    const override = ENTRY_PAGE_OVERRIDES[fileName];
+    if (override) {
+      return sendText(res, 200, renderEntryHtml(override), 'text/html; charset=utf-8');
+    }
+    const pagePath = path.join(HTML_DIR, fileName);
+    return fs.readFile(pagePath, 'utf8', (error, data) => {
+      if (error) return sendJson(res, 404, { error: 'Page not found' });
+      return sendText(res, 200, data, 'text/html; charset=utf-8');
+    });
+  }
+
   if (req.method === 'GET' && pathname === '/') {
     return sendText(res, 200, HTML_PAGE, 'text/html; charset=utf-8');
   }
@@ -2262,6 +2601,56 @@ function routes(req, res) {
     return fs.readFile(iconPath, (error, data) => {
       if (error) return sendJson(res, 404, { error: 'Icon not found' });
       return sendText(res, 200, data, 'image/svg+xml; charset=utf-8');
+    });
+  }
+
+  if (req.method === 'GET' && pathname.startsWith('/pfp/')) {
+    const rawName = path.basename(pathname);
+    let fileName = '';
+    try {
+      fileName = decodeURIComponent(rawName);
+    } catch {
+      return sendJson(res, 400, { error: 'Invalid pfp path' });
+    }
+    if (!/^[a-zA-Z0-9._\- ]+\.svg$/i.test(fileName)) {
+      return sendJson(res, 400, { error: 'Invalid pfp path' });
+    }
+    const pfpPath = path.join(PFP_DIR, fileName);
+    return fs.readFile(pfpPath, (error, data) => {
+      if (error) return sendJson(res, 404, { error: 'PFP not found' });
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=43200' });
+      return res.end(data);
+    });
+  }
+
+  if (req.method === 'GET' && pathname.startsWith('/mp3/')) {
+    const rawName = path.basename(pathname);
+    let fileName = '';
+    try {
+      fileName = decodeURIComponent(rawName);
+    } catch {
+      return sendJson(res, 400, { error: 'Invalid mp3 path' });
+    }
+    if (!/^[a-zA-Z0-9._\- ]+\.mp3$/i.test(fileName)) {
+      return sendJson(res, 400, { error: 'Invalid mp3 path' });
+    }
+    const mp3Path = path.join(MP3_DIR, fileName);
+    return fs.readFile(mp3Path, (error, data) => {
+      if (error) return sendJson(res, 404, { error: 'MP3 not found' });
+      res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'public, max-age=43200' });
+      return res.end(data);
+    });
+  }
+
+  if (req.method === 'GET' && pathname === '/api/audio/tracks') {
+    return fs.readdir(MP3_DIR, (error, entries) => {
+      if (error) return sendJson(res, 200, { tracks: ['/mp3/1.mp3'] });
+      const tracks = (Array.isArray(entries) ? entries : [])
+        .filter((name) => /^[a-zA-Z0-9._\- ]+\.mp3$/i.test(String(name || '')))
+        .sort((a, b) => a.localeCompare(b))
+        .map((name) => `/mp3/${encodeURIComponent(name)}`);
+      if (!tracks.length) return sendJson(res, 200, { tracks: ['/mp3/1.mp3'] });
+      return sendJson(res, 200, { tracks });
     });
   }
 
@@ -2422,6 +2811,7 @@ function routes(req, res) {
     const code = pathname.split('/')[3]?.toUpperCase();
     const game = code ? games.get(code) : null;
     if (!game) return sendJson(res, 404, { error: 'Game not found' });
+    endGameWhenTimerExpires(game, { requestId: reqInfo.requestId });
     return sendJson(res, 200, { game: publicGame(game) });
   }
 
@@ -2506,7 +2896,7 @@ function routes(req, res) {
 
     game.state = 'live';
     game.startedAt = new Date().toISOString();
-    if (game.settings.gameType === 'timed') {
+    if (['timed', 'hybrid'].includes(game.settings.gameType)) {
       game.endsAt = new Date(Date.now() + game.settings.timeLimitSec * 1000).toISOString();
     }
     logInfo('game.started', {
@@ -2568,12 +2958,17 @@ function routes(req, res) {
     if (!game) return sendJson(res, 404, { error: 'Game not found' });
     const player = game.players.find((p) => p.playerId === playerId);
     if (!player) return sendJson(res, 404, { error: 'Player not found' });
+    clampGameGold(game);
+    endGameWhenTimerExpires(game, { requestId: reqInfo.requestId });
 
     if (game.state === 'ended') {
       return sendJson(res, 200, {
         state: 'ended',
         ended: true,
+        mode: game.mode,
+        modeFamily: game.settings.gameTypeFamily || 'goldquest',
         gold: player.gold,
+        puzzle: getPuzzlePayload(game),
         playerName: player.playerName,
         message: 'Host ended the game.',
       });
@@ -2584,7 +2979,10 @@ function routes(req, res) {
       return sendJson(res, 200, {
         state: game.state,
         waiting: true,
+        mode: game.mode,
+        modeFamily: game.settings.gameTypeFamily || 'goldquest',
         gold: player.gold,
+        puzzle: getPuzzlePayload(game),
         playerName: player.playerName,
         feedbackDelaySec: game.settings.feedbackDelaySec,
         blookSelection: {
@@ -2595,37 +2993,43 @@ function routes(req, res) {
       });
     }
 
-    const timed = game.settings.gameType === 'timed';
-    const remainingSec = timed ? Math.max(0, Math.floor((new Date(game.endsAt).getTime() - Date.now()) / 1000)) : null;
+    const hasTimer = ['timed', 'hybrid'].includes(game.settings.gameType);
+    const remainingSec = hasTimer ? Math.max(0, Math.floor((new Date(game.endsAt).getTime() - Date.now()) / 1000)) : null;
     const limit = game.settings.questionLimit;
 
     if (player.pendingChest) {
       return sendJson(res, 200, {
         state: 'live',
+        mode: game.mode,
+        modeFamily: game.settings.gameTypeFamily || 'goldquest',
         gold: player.gold,
         questionIndex: player.questionIndex,
         gameType: game.settings.gameType,
         remainingSec,
         targetQuestions: limit,
         feedbackDelaySec: game.settings.feedbackDelaySec,
+        puzzle: getPuzzlePayload(game),
         chestPhase: player.pendingChest.phase,
-        chest: {
-          options: player.pendingChest.options.map((option) => ({
-            label: option.label,
-            type: option.type,
-          })),
-          selectedIndex: player.pendingChest.selectedIndex,
-          result: player.pendingChest.result,
-        },
+        chest: getChestPayload(game, player),
       });
     }
 
-    const finished = timed ? remainingSec <= 0 : player.questionIndex >= limit;
+    const finishedByTime = hasTimer ? remainingSec <= 0 : false;
+    const finishedByQuestions = player.questionIndex >= limit;
+    const finished =
+      game.settings.gameType === 'timed'
+        ? finishedByTime
+        : game.settings.gameType === 'hybrid'
+          ? (finishedByTime || finishedByQuestions)
+          : finishedByQuestions;
     if (finished) {
       return sendJson(res, 200, {
         state: 'finished',
         finished: true,
+        mode: game.mode,
+        modeFamily: game.settings.gameTypeFamily || 'goldquest',
         gold: player.gold,
+        puzzle: getPuzzlePayload(game),
         answered: player.questionIndex,
         remainingSec,
       });
@@ -2636,12 +3040,15 @@ function routes(req, res) {
 
     return sendJson(res, 200, {
       state: 'live',
+      mode: game.mode,
+      modeFamily: game.settings.gameTypeFamily || 'goldquest',
       gold: player.gold,
       questionIndex: player.questionIndex,
       gameType: game.settings.gameType,
       remainingSec,
       targetQuestions: limit,
       feedbackDelaySec: game.settings.feedbackDelaySec,
+      puzzle: getPuzzlePayload(game),
       question: {
         q: question.q,
         answers: question.answers,
@@ -2656,15 +3063,19 @@ function routes(req, res) {
     if (!game) return sendJson(res, 404, { error: 'Game not found' });
     const player = game.players.find((p) => p.playerId === playerId);
     if (!player) return sendJson(res, 404, { error: 'Player not found' });
+    clampGameGold(game);
+    endGameWhenTimerExpires(game, { requestId: reqInfo.requestId });
     if (game.state === 'ended') return sendJson(res, 410, { error: 'Game ended by host.' });
     if (game.state !== 'live') return sendJson(res, 400, { error: 'Game has not started.' });
     if (player.pendingChest) return sendJson(res, 409, { error: 'Resolve your chest first.' });
 
     parseBody(req)
       .then((body) => {
-        const timed = game.settings.gameType === 'timed';
-        const remainingSec = timed ? Math.max(0, Math.floor((new Date(game.endsAt).getTime() - Date.now()) / 1000)) : 999;
-        if (timed && remainingSec <= 0) return sendJson(res, 200, { finished: true, gold: player.gold });
+        const hasTimer = ['timed', 'hybrid'].includes(game.settings.gameType);
+        const timedScoring = game.settings.gameType === 'timed';
+        const isAssembleMode = game.settings.gameTypeFamily === 'assemble';
+        const remainingSec = hasTimer ? Math.max(0, Math.floor((new Date(game.endsAt).getTime() - Date.now()) / 1000)) : 999;
+        if (hasTimer && remainingSec <= 0) return sendJson(res, 200, { finished: true, gold: player.gold });
 
         const index = Number(body.answerIndex);
         const question = game.set.questions[player.questionIndex % game.set.questions.length];
@@ -2673,11 +3084,25 @@ function routes(req, res) {
         const correct = index === question.correct;
         let gained = 0;
         let awaitingChestChoice = false;
+        let puzzleReveal = null;
         if (correct) {
-          gained = timed ? Math.floor(15 + Math.random() * 31) : Math.floor(20 + Math.random() * 61);
+          gained = isAssembleMode
+            ? (timedScoring ? Math.floor(60 + Math.random() * 121) : Math.floor(90 + Math.random() * 181))
+            : (timedScoring ? Math.floor(30 + Math.random() * 71) : Math.floor(45 + Math.random() * 106));
           player.gold += gained;
-          player.pendingChest = createPendingChest();
-          awaitingChestChoice = true;
+          if (isAssembleMode) {
+            puzzleReveal = revealNextPuzzleTile(game);
+            if (puzzleReveal?.tileNumber) {
+              game.eventLog.push({
+                at: new Date().toISOString(),
+                type: 'puzzle',
+                text: `${player.playerName} revealed tile #${puzzleReveal.tileNumber} (${puzzleReveal.revealedCount}/${puzzleReveal.totalTiles}).`,
+              });
+            }
+          } else {
+            player.pendingChest = createPendingChest();
+            awaitingChestChoice = true;
+          }
         }
         player.questionIndex += 1;
 
@@ -2687,6 +3112,8 @@ function routes(req, res) {
           gained,
           totalGold: player.gold,
           awaitingChestChoice,
+          puzzleReveal,
+          puzzle: getPuzzlePayload(game),
           nextQuestion: player.questionIndex,
           remainingSec,
         });
@@ -2700,6 +3127,7 @@ function routes(req, res) {
           totalGold: player.gold,
           questionIndex: player.questionIndex,
           awaitingChestChoice,
+          puzzleReveal: puzzleReveal?.tileNumber || null,
         });
       })
       .catch((error) => sendJson(res, 400, { error: error.message || 'Unable to parse request' }));
@@ -2712,6 +3140,8 @@ function routes(req, res) {
     if (!game) return sendJson(res, 404, { error: 'Game not found' });
     const player = game.players.find((p) => p.playerId === playerId);
     if (!player) return sendJson(res, 404, { error: 'Player not found' });
+    clampGameGold(game);
+    endGameWhenTimerExpires(game, { requestId: reqInfo.requestId });
     if (game.state === 'ended') return sendJson(res, 410, { error: 'Game ended by host.' });
     if (game.state !== 'live') return sendJson(res, 400, { error: 'Game has not started.' });
     if (!player.pendingChest) return sendJson(res, 400, { error: 'No chest action pending.' });
@@ -2725,9 +3155,29 @@ function routes(req, res) {
           }
 
           const option = player.pendingChest.options[index];
+          player.pendingChest.selectedIndex = index;
+          const requiresTarget = INTERACTION_CHEST_TYPES.has(option.type);
+          const targetChoices = requiresTarget ? getChestTargetChoices(game, player) : [];
+          if (requiresTarget && targetChoices.length) {
+            player.pendingChest.phase = 'target';
+            player.pendingChest.result = null;
+            logDebug('game.chest.target_required', {
+              requestId: reqInfo.requestId,
+              code: game.code,
+              playerId: player.playerId,
+              optionIndex: index,
+              optionType: option.type,
+              targets: targetChoices.length,
+            });
+            return sendJson(res, 200, {
+              chestPhase: 'target',
+              gold: player.gold,
+              chest: getChestPayload(game, player),
+            });
+          }
+
           const result = resolveChestChoice(game, player, option);
           player.pendingChest.phase = 'result';
-          player.pendingChest.selectedIndex = index;
           player.pendingChest.result = result;
           if (result?.eventText) {
             game.eventLog.push({ at: new Date().toISOString(), type: 'chest', text: result.eventText });
@@ -2743,6 +3193,57 @@ function routes(req, res) {
             target: result?.target || null,
           });
 
+          return sendJson(res, 200, {
+            chestPhase: 'result',
+            gold: player.gold,
+            chest: {
+              options: player.pendingChest.options.map((item) => ({ label: item.label, type: item.type })),
+              selectedIndex: player.pendingChest.selectedIndex,
+              result: player.pendingChest.result,
+            },
+          });
+        }
+
+        if (player.pendingChest.phase === 'target') {
+          const index = Number(player.pendingChest.selectedIndex);
+          if (!Number.isInteger(index) || index < 0 || index >= player.pendingChest.options.length) {
+            return sendJson(res, 400, { error: 'Chest target action is invalid.' });
+          }
+          const option = player.pendingChest.options[index];
+          if (!INTERACTION_CHEST_TYPES.has(option.type)) {
+            return sendJson(res, 400, { error: 'Selected chest option does not need a target.' });
+          }
+
+          let result = null;
+          if (body.action === 'skip') {
+            result = createChestSkipResult(player, option);
+          } else if (body.action === 'target') {
+            const targetPlayerId = String(body.targetPlayerId || '');
+            if (!targetPlayerId) return sendJson(res, 400, { error: 'targetPlayerId is required.' });
+            const validTargets = getChestTargetChoices(game, player);
+            if (!validTargets.some((entry) => entry.playerId === targetPlayerId)) {
+              return sendJson(res, 404, { error: 'Target player not found.' });
+            }
+            result = resolveChestChoice(game, player, option, targetPlayerId);
+          } else {
+            return sendJson(res, 400, { error: 'Use action=\"target\" or action=\"skip\".' });
+          }
+
+          player.pendingChest.phase = 'result';
+          player.pendingChest.result = result;
+          if (result?.eventText) {
+            game.eventLog.push({ at: new Date().toISOString(), type: 'chest', text: result.eventText });
+          }
+          logDebug('game.chest.target_resolved', {
+            requestId: reqInfo.requestId,
+            code: game.code,
+            playerId: player.playerId,
+            optionType: option.type,
+            action: body.action,
+            target: result?.target || body.targetPlayerId || null,
+            resultType: result?.type || null,
+            playerGold: player.gold,
+          });
           return sendJson(res, 200, {
             chestPhase: 'result',
             gold: player.gold,

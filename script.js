@@ -1,9 +1,10 @@
-const views = ["home", "host", "join", "lobby", "playerGame"];
+const views = ["home", "host", "hostMode", "join", "lobby", "playerGame"];
 let currentHostGameCode = null;
 let lobbyPoll = null;
 let playerPoll = null;
 let currentPlayer = { code: null, id: null, name: null, blook: null };
 let selectedSetId = null;
+let selectedSetLabel = "";
 let selectedCustomSet = null;
 let generatedAiSet = null;
 let customDraftQuestions = [];
@@ -11,20 +12,194 @@ let currentEditorSource = "manual";
 let latestJoinUrl = "";
 let playerFeedbackLockUntil = 0;
 let playerFeedbackTimer = null;
+const lobbyRowElements = new Map();
+const lobbyPlayerGoldDisplay = new Map();
+const lobbyPlayerGoldAnimationFrames = new Map();
+const goldquestPage = (window.GreenitPages && window.GreenitPages.goldquest) ? window.GreenitPages.goldquest : null;
+const currentPath = String(window.location.pathname || "/").toLowerCase();
+const isIndexPage = currentPath === "/" || currentPath === "/index.html";
+const isGoldquestPlayerPage = currentPath === "/goldquest.html";
+const isGoldquestHostPage = currentPath === "/goldquesthost.html" || currentPath === "/hostgoldquest.html" || currentPath === "/hostgoldqueest.html";
+const hostSessionStorageKey = "greenit.host.session.v1";
+const playerSessionStorageKey = "greenit.player.session.v1";
 
 const hostStatus = document.getElementById("hostStatus");
+const hostModeStatus = document.getElementById("hostModeStatus");
 const joinStatus = document.getElementById("joinStatus");
 const startStatus = document.getElementById("startStatus");
+
+function normalizeGameCode(rawCode) {
+  const code = String(rawCode || "").trim().toUpperCase();
+  return /^\d{6}$/.test(code) ? code : "";
+}
+
+function normalizePlayerId(rawPlayerId) {
+  const playerId = String(rawPlayerId || "").trim();
+  return /^[a-z0-9]{6,24}$/i.test(playerId) ? playerId : "";
+}
+
+function saveStorageJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function loadStorageJson(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clearStorageJson(key) {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function persistHostSession() {
+  const code = normalizeGameCode(currentHostGameCode);
+  if (!code) return;
+  saveStorageJson(hostSessionStorageKey, { code });
+}
+
+function restoreHostSession() {
+  const saved = loadStorageJson(hostSessionStorageKey);
+  const code = normalizeGameCode(saved?.code);
+  return code ? { code } : null;
+}
+
+function clearHostSession() {
+  clearStorageJson(hostSessionStorageKey);
+}
+
+function persistPlayerSession() {
+  const code = normalizeGameCode(currentPlayer.code);
+  const playerId = normalizePlayerId(currentPlayer.id);
+  if (!code || !playerId) return;
+  saveStorageJson(playerSessionStorageKey, {
+    code,
+    playerId,
+    name: String(currentPlayer.name || "").slice(0, 64),
+  });
+}
+
+function restorePlayerSession() {
+  const saved = loadStorageJson(playerSessionStorageKey);
+  const code = normalizeGameCode(saved?.code);
+  const playerId = normalizePlayerId(saved?.playerId);
+  const name = String(saved?.name || "").trim().slice(0, 64);
+  if (!code || !playerId) return null;
+  return { code, playerId, name };
+}
+
+function clearPlayerSession() {
+  clearStorageJson(playerSessionStorageKey);
+}
+
+function getCurrentPlayerRoute() {
+  const params = new URLSearchParams();
+  const code = normalizeGameCode(currentPlayer.code);
+  const playerId = normalizePlayerId(currentPlayer.id);
+  if (code) params.set("code", code);
+  if (playerId) params.set("playerId", playerId);
+  if (currentPlayer.name) params.set("name", String(currentPlayer.name));
+  const query = params.toString();
+  return query ? `/goldquest.html?${query}` : "/goldquest.html";
+}
+
+function getCurrentHostRoute() {
+  const code = normalizeGameCode(currentHostGameCode);
+  return code ? `/goldquesthost.html?code=${encodeURIComponent(code)}` : "/goldquesthost.html";
+}
 
 function showView(viewId) {
   views.forEach((id) => {
     document.getElementById(id).classList.toggle("hidden", id !== viewId);
   });
   document.body.classList.toggle("play-view-active", viewId === "playerGame");
+  if (viewId !== "lobby") {
+    document.body.classList.remove("host-ended-view");
+  }
   if (viewId !== "playerGame") {
     const shell = document.querySelector(".player-shell");
-    if (shell) shell.classList.remove("is-waiting");
+    if (shell) {
+      shell.classList.remove("is-waiting");
+      shell.classList.remove("is-chest");
+    }
   }
+}
+
+function getPendingHostCustomSet() {
+  if (selectedCustomSet) return selectedCustomSet;
+  if (!selectedSetId && customDraftQuestions.length) {
+    try {
+      return getEditorCustomSet();
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function updateHostModeSummary() {
+  const summaryEl = document.getElementById("hostModeSetSummary");
+  if (!summaryEl) return;
+  const pendingCustomSet = getPendingHostCustomSet();
+  if (selectedSetId) {
+    summaryEl.textContent = `Quiz ready: ${selectedSetLabel || "live set selected"}.`;
+    return;
+  }
+  if (pendingCustomSet) {
+    const questionCount = Array.isArray(pendingCustomSet.questions) ? pendingCustomSet.questions.length : 0;
+    summaryEl.textContent = `Quiz ready: ${pendingCustomSet.title}${questionCount ? ` (${questionCount} questions)` : ""}.`;
+    return;
+  }
+  summaryEl.textContent = "Pick a quiz set first.";
+}
+
+function updateGameTypeFields() {
+  const gameType = document.getElementById("gameType");
+  const questionWrap = document.getElementById("questionLimitWrap");
+  const timeWrap = document.getElementById("timeLimitWrap");
+  const questionInput = document.getElementById("questionLimit");
+  const timeInput = document.getElementById("timeLimit");
+  if (!gameType || !questionWrap || !timeWrap || !questionInput || !timeInput) return;
+
+  const value = gameType.value;
+  const isTimed = value === "timed";
+  const isQuestion = value === "question";
+  questionWrap.classList.toggle("hidden", isTimed);
+  timeWrap.classList.toggle("hidden", isQuestion);
+  questionInput.disabled = isTimed;
+  timeInput.disabled = isQuestion;
+}
+
+function goToHostModeSetup() {
+  let pendingCustomSet = selectedCustomSet;
+  if (!selectedSetId && !pendingCustomSet && customDraftQuestions.length) {
+    try {
+      pendingCustomSet = getEditorCustomSet();
+    } catch (error) {
+      hostStatus.textContent = error.message;
+      return;
+    }
+  }
+  if (!selectedSetId && !pendingCustomSet) {
+    hostStatus.textContent = "Pick a live set or use your custom set first.";
+    return;
+  }
+  if (hostModeStatus) hostModeStatus.textContent = "";
+  updateHostModeSummary();
+  updateGameTypeFields();
+  showView("hostMode");
 }
 
 async function api(url, options) {
@@ -76,6 +251,48 @@ function toQuestionImageSrc(url) {
   }
   if (/^https?:\/\//i.test(value)) return `/api/image-proxy?url=${encodeURIComponent(value)}`;
   return value;
+}
+
+function renderPuzzleBoard(puzzle, highlightedTileIndex = null) {
+  if (!puzzle || typeof puzzle !== "object") return "";
+  const rows = Math.max(1, Number(puzzle.rows) || 4);
+  const cols = Math.max(1, Number(puzzle.cols) || 4);
+  const totalTiles = Math.max(1, Number(puzzle.totalTiles) || (rows * cols));
+  const revealedCount = Math.max(0, Math.min(totalTiles, Number(puzzle.revealedCount) || 0));
+  const imageUrl = toQuestionImageSrc(puzzle.imageUrl || "");
+  const tiles = Array.isArray(puzzle.tiles) && puzzle.tiles.length
+    ? puzzle.tiles.slice(0, totalTiles)
+    : Array.from({ length: totalTiles }, (_, index) => ({
+      index,
+      number: index + 1,
+      revealed: false,
+      row: Math.floor(index / cols),
+      col: index % cols,
+    }));
+
+  const tileHtml = tiles.map((tile, fallbackIndex) => {
+    const index = Number.isInteger(Number(tile.index)) ? Number(tile.index) : fallbackIndex;
+    const number = Number.isInteger(Number(tile.number)) ? Number(tile.number) : (index + 1);
+    const revealed = !!tile.revealed;
+    const row = Number.isInteger(Number(tile.row)) ? Number(tile.row) : Math.floor(index / cols);
+    const col = Number.isInteger(Number(tile.col)) ? Number(tile.col) : (index % cols);
+    const posX = cols <= 1 ? 0 : Math.round((col / (cols - 1)) * 10000) / 100;
+    const posY = rows <= 1 ? 0 : Math.round((row / (rows - 1)) * 10000) / 100;
+    const inlineStyle = revealed && imageUrl
+      ? ` style="background-image:url('${escapeHtml(imageUrl)}');background-size:${cols * 100}% ${rows * 100}%;background-position:${posX}% ${posY}%;" `
+      : "";
+    const classes = `coop-tile${revealed ? " is-revealed" : ""}${Number(highlightedTileIndex) === index ? " is-new" : ""}`;
+    return `<div class="${classes}"${inlineStyle}><span>${number}</span></div>`;
+  }).join("");
+
+  return `
+    <div class="coop-wrap">
+      <div class="coop-board-head">Team image: ${revealedCount}/${totalTiles} blocks assembled</div>
+      <div class="coop-board-grid" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr));">
+        ${tileHtml}
+      </div>
+    </div>
+  `;
 }
 
 function setEditorSource(source) {
@@ -234,6 +451,22 @@ function setPlayerShellMode(mode) {
   const shell = document.querySelector(".player-shell");
   if (!shell) return;
   shell.classList.toggle("is-waiting", mode === "waiting");
+  shell.classList.toggle("is-chest", mode === "chest");
+}
+
+function fitChestLayout() {
+  const shell = document.querySelector(".player-shell");
+  const stage = document.getElementById("questionPanel");
+  const chest = stage?.querySelector(".chest-screen");
+  if (!shell || !stage || !chest || !shell.classList.contains("is-chest")) return;
+  chest.style.transform = "";
+  chest.style.width = "";
+  const available = Math.max(80, stage.clientHeight - 4);
+  const needed = chest.scrollHeight;
+  if (needed <= available) return;
+  const scale = Math.max(0.7, Math.min(1, available / needed));
+  chest.style.transform = `scale(${scale})`;
+  chest.style.width = `${100 / scale}%`;
 }
 
 function prefillJoinCodeFromQuery() {
@@ -241,6 +474,56 @@ function prefillJoinCodeFromQuery() {
   if (code) {
     document.getElementById("joinCode").value = code.toUpperCase();
   }
+}
+
+function hydrateHostSessionFromLocation() {
+  const params = new URLSearchParams(window.location.search || "");
+  const codeFromQuery = normalizeGameCode(params.get("code"));
+  if (codeFromQuery) {
+    currentHostGameCode = codeFromQuery;
+    persistHostSession();
+    return true;
+  }
+  const saved = restoreHostSession();
+  if (!saved?.code) return false;
+  currentHostGameCode = saved.code;
+  return true;
+}
+
+function hydratePlayerSessionFromLocation() {
+  const params = new URLSearchParams(window.location.search || "");
+  const codeFromQuery = normalizeGameCode(params.get("code"));
+  const playerIdFromQuery = normalizePlayerId(params.get("playerId") || params.get("id"));
+  const nameFromQuery = String(params.get("name") || "").trim().slice(0, 64);
+  if (codeFromQuery && playerIdFromQuery) {
+    currentPlayer = { code: codeFromQuery, id: playerIdFromQuery, name: nameFromQuery || currentPlayer.name, blook: currentPlayer.blook || null };
+    persistPlayerSession();
+    return true;
+  }
+  const saved = restorePlayerSession();
+  if (!saved?.code || !saved?.playerId) return false;
+  currentPlayer = { code: saved.code, id: saved.playerId, name: saved.name || currentPlayer.name, blook: currentPlayer.blook || null };
+  return true;
+}
+
+async function resumeHostGamePage() {
+  if (!hydrateHostSessionFromLocation()) return false;
+  showView("lobby");
+  startStatus.textContent = "Lobby connected.";
+  await refreshLobby();
+  if (lobbyPoll) clearInterval(lobbyPoll);
+  lobbyPoll = setInterval(refreshLobby, 1500);
+  return true;
+}
+
+async function resumePlayerGamePage() {
+  const hasPlayerSession = hydratePlayerSessionFromLocation();
+  if (!hasPlayerSession) return false;
+  showView("playerGame");
+  await refreshPlayer();
+  if (playerPoll) clearInterval(playerPoll);
+  playerPoll = setInterval(refreshPlayer, 1200);
+  return true;
 }
 
 async function choosePlayerBlook(blookId) {
@@ -633,13 +916,39 @@ function renderEventFeed(events) {
   if (!events.length) feed.innerHTML = '<div class="event"><span class="small">No events yet.</span></div>';
 }
 
+function setEndLeaderboardOpen(open) {
+  if (!goldquestPage || typeof goldquestPage.setEndLeaderboardOpen !== "function") return;
+  goldquestPage.setEndLeaderboardOpen(Boolean(open));
+}
+
+async function playHostMusic() {
+  if (!goldquestPage || typeof goldquestPage.playHostMusic !== "function") return;
+  await goldquestPage.playHostMusic({ api });
+}
+
+function pauseHostMusic(reset = false) {
+  if (!goldquestPage || typeof goldquestPage.pauseHostMusic !== "function") return;
+  goldquestPage.pauseHostMusic(Boolean(reset));
+}
+
+function renderHostEndScreen(sortedPlayers) {
+  if (!goldquestPage || typeof goldquestPage.renderHostEndScreen !== "function") return;
+  goldquestPage.renderHostEndScreen({
+    sortedPlayers,
+    escapeHtml,
+    ordinalRank,
+  });
+}
+
 async function refreshLobby() {
   if (!currentHostGameCode) return;
   const data = await api(`/api/games/${currentHostGameCode}/lobby`);
   const phase = data.game.state === "lobby" ? "lobby" : data.game.state === "live" ? "live" : "ended";
+  const sortedPlayers = [...data.game.players].sort((a, b) => b.gold - a.gold);
 
   const lobbyEl = document.getElementById("lobby");
   lobbyEl.dataset.phase = phase;
+  document.body.classList.toggle("host-ended-view", phase === "ended");
   document.getElementById("lobbyCode").textContent = data.game.code;
   document.getElementById("liveCode").textContent = data.game.code;
   document.getElementById("playersTitle").textContent = phase === "lobby" ? "Players" : "Leaderboard";
@@ -656,9 +965,8 @@ async function refreshLobby() {
 
   const settings = data.game.settings;
   document.getElementById("lobbyMeta").textContent =
-    `${data.game.mode} â¢ ${data.game.setTitle} â¢ PIN ${data.game.hostPin} â¢ ${settings.gameType === "timed" ? `${settings.timeLimitSec}s` : `${settings.questionLimit} Q`} â¢ ${data.game.state}`;
+    `${data.game.mode} \u2022 ${data.game.setTitle} \u2022 PIN ${data.game.hostPin} \u2022 ${settings.gameType === "timed" ? `${settings.timeLimitSec}s` : `${settings.questionLimit} Q`} \u2022 ${data.game.state}`;
 
-  const sortedPlayers = [...data.game.players].sort((a, b) => b.gold - a.gold);
   renderLobbyPlayers(sortedPlayers, phase);
   renderEventFeed(data.game.eventLog || []);
 
@@ -666,85 +974,30 @@ async function refreshLobby() {
   startBtn.disabled = phase !== "lobby";
   startBtn.textContent = phase === "lobby" ? "Start" : phase === "live" ? "Live" : "Ended";
 
-  if (data.game.state === "ended") startStatus.textContent = "Game ended for everyone.";
-}
-
-function chestIconMeta(type) {
-  if (type === "swap") return { glyph: "â", className: "icon-swap" };
-  if (type === "take_percent") return { glyph: "â¤´", className: "icon-take" };
-  if (type === "lose_percent" || type === "lose_flat") return { glyph: "â", className: "icon-loss" };
-  if (type === "bonus_percent" || type === "bonus_flat") return { glyph: "+", className: "icon-gain" };
-  if (type === "no_interaction") return { glyph: "!", className: "icon-neutral" };
-  return { glyph: "â¢", className: "icon-neutral" };
-}
-
-function chestOutcomeDetail(result) {
-  const before = Number(result?.playerBefore);
-  const after = Number(result?.playerAfter);
-  const parts = [];
-  if (Number.isFinite(before) && Number.isFinite(after)) {
-    parts.push(`You: ${before} â ${after}`);
+  if (goldquestPage && typeof goldquestPage.handleLobbyPhase === "function") {
+    await goldquestPage.handleLobbyPhase({
+      phase,
+      sortedPlayers,
+      startStatusEl: startStatus,
+      api,
+      escapeHtml,
+      ordinalRank,
+    });
+  } else {
+    if (phase === "live" || phase === "ended") {
+      playHostMusic();
+    } else {
+      pauseHostMusic(true);
+    }
+    if (phase === "ended") {
+      document.getElementById("hostEndScreen")?.classList.remove("hidden");
+      startStatus.textContent = "";
+      renderHostEndScreen(sortedPlayers);
+    } else {
+      document.getElementById("hostEndScreen")?.classList.add("hidden");
+      setEndLeaderboardOpen(false);
+    }
   }
-  if (result?.target && Number.isFinite(Number(result?.targetBefore)) && Number.isFinite(Number(result?.targetAfter))) {
-    parts.push(`${result.target}: ${Number(result.targetBefore)} â ${Number(result.targetAfter)}`);
-  }
-  return parts.join(" | ");
-}
-
-function chestDeltaLabel(delta) {
-  const value = Number(delta);
-  if (!Number.isFinite(value)) return "";
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value} gold`;
-}
-
-function chestImpactMarkup(result) {
-  const playerBefore = Number(result?.playerBefore);
-  const playerAfter = Number(result?.playerAfter);
-  const playerDelta = playerAfter - playerBefore;
-  const hasPlayer = Number.isFinite(playerBefore) && Number.isFinite(playerAfter);
-  const targetName = String(result?.target || "").trim();
-  const targetBefore = Number(result?.targetBefore);
-  const targetAfter = Number(result?.targetAfter);
-  const hasTarget = !!targetName && Number.isFinite(targetBefore) && Number.isFinite(targetAfter);
-
-  if (!hasPlayer) return "";
-
-  const playerDeltaClass = playerDelta > 0 ? "positive" : playerDelta < 0 ? "negative" : "";
-  const playerCard = `
-    <div class="impact-card">
-      <div class="impact-label">You</div>
-      <div class="impact-main">${playerBefore} â ${playerAfter}</div>
-      <div class="impact-delta ${playerDeltaClass}">${escapeHtml(chestDeltaLabel(playerDelta))}</div>
-    </div>
-  `;
-
-  if (!hasTarget) {
-    return `<div class="chest-impact-grid single">${playerCard}</div>`;
-  }
-
-  const targetDelta = targetAfter - targetBefore;
-  const targetDeltaClass = targetDelta > 0 ? "positive" : targetDelta < 0 ? "negative" : "";
-  const connector = result?.type === "swap" ? "â" : "â";
-  return `
-    <div class="chest-impact-grid">
-      ${playerCard}
-      <div class="impact-connector">${connector}</div>
-      <div class="impact-card">
-        <div class="impact-label">${escapeHtml(targetName)}</div>
-        <div class="impact-main">${targetBefore} â ${targetAfter}</div>
-        <div class="impact-delta ${targetDeltaClass}">${escapeHtml(chestDeltaLabel(targetDelta))}</div>
-      </div>
-    </div>
-  `;
-}
-
-function chestOutcomeMeta(type) {
-  if (type === "bonus_flat" || type === "bonus_percent") return { className: "is-gain", badge: "+" };
-  if (type === "lose_flat" || type === "lose_percent") return { className: "is-loss", badge: "â" };
-  if (type === "take_percent") return { className: "is-take", badge: "â¤´" };
-  if (type === "swap") return { className: "is-swap", badge: "â" };
-  return { className: "is-neutral", badge: "â¢" };
 }
 
 async function chooseChestOption(optionIndex) {
@@ -752,6 +1005,22 @@ async function chooseChestOption(optionIndex) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ optionIndex }),
+  });
+}
+
+async function chooseChestTarget(targetPlayerId) {
+  return api(`/api/games/${currentPlayer.code}/player/${currentPlayer.id}/chest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "target", targetPlayerId }),
+  });
+}
+
+async function skipChestTarget() {
+  return api(`/api/games/${currentPlayer.code}/player/${currentPlayer.id}/chest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "skip" }),
   });
 }
 
@@ -772,11 +1041,22 @@ async function refreshPlayer() {
     const answerGrid = document.getElementById("answerGrid");
     const metaEl = document.getElementById("playerMeta");
     const statusEl = document.getElementById("playerStatus");
+    const setStatus = (text) => {
+      if (statusEl) statusEl.textContent = text || "";
+    };
     document.getElementById("playerHudName").textContent = currentPlayer.name || "player";
     document.getElementById("playerHudGold").textContent = String(data.gold || 0);
-    const modeText = data.gameType === "timed" ? "Time Attack" : "Gold Quest";
+    const modeText = String(data.mode || "Gold Quest");
+    const modeFamily = String(data.modeFamily || "goldquest");
     const feedbackDelaySec = Math.max(0, Math.min(Number(data.feedbackDelaySec ?? 1), 5));
     const feedbackDelayMs = Math.round(feedbackDelaySec * 1000);
+
+    if (isIndexPage && data.state === "live") {
+      persistPlayerSession();
+      window.location.assign(getCurrentPlayerRoute());
+      return;
+    }
+
     hideFeedbackBanner();
     if (playerFeedbackTimer) {
       clearTimeout(playerFeedbackTimer);
@@ -786,7 +1066,8 @@ async function refreshPlayer() {
     if (data.ended) {
       setPlayerShellMode("game");
       setPlayerHudState("incorrect", "GAME OVER");
-      panel.innerHTML = '<h2 class="question-title">Host ended the game.</h2>';
+      const puzzleMarkup = modeFamily === "assemble" ? renderPuzzleBoard(data.puzzle, data?.puzzle?.lastRevealedTile) : "";
+      panel.innerHTML = `${puzzleMarkup}<h2 class="question-title">Host ended the game.</h2>`;
       answerGrid.innerHTML = "";
       metaEl.textContent = "Game ended";
       if (playerPoll) {
@@ -851,7 +1132,7 @@ async function refreshPlayer() {
               await refreshPlayer();
             } catch (error) {
               playerFeedbackLockUntil = 0;
-              statusEl.textContent = error.message;
+	              setStatus(error.message);
             }
           };
           waitGrid.appendChild(card);
@@ -877,7 +1158,7 @@ async function refreshPlayer() {
       }
       if (selectedName) selectedName.textContent = current?.name || "Pick a blook";
 
-      statusEl.textContent = current ? `Selected blook: ${current.name}` : "Select a blook (unique per lobby).";
+	      setStatus(current ? `Selected blook: ${current.name}` : "Select a blook (unique per lobby).");
       metaEl.textContent = "Lobby waiting room";
       return;
     }
@@ -885,7 +1166,8 @@ async function refreshPlayer() {
     if (data.finished) {
       setPlayerShellMode("game");
       setPlayerHudState("correct", "COMPLETE");
-      panel.innerHTML = `<h2 class="question-title">Done! Final gold: ${data.gold}</h2>`;
+      const puzzleMarkup = modeFamily === "assemble" ? renderPuzzleBoard(data.puzzle, data?.puzzle?.lastRevealedTile) : "";
+      panel.innerHTML = `${puzzleMarkup}<h2 class="question-title">Done! Final gold: ${data.gold}</h2>`;
       answerGrid.innerHTML = "";
       metaEl.textContent = `Answered: ${data.answered || 0}`;
       if (playerPoll) {
@@ -895,138 +1177,43 @@ async function refreshPlayer() {
       return;
     }
 
-    if (data.chestPhase === "choose" && data.chest) {
-      setPlayerShellMode("game");
-      setPlayerHudState("correct", "CHEST");
-      statusEl.textContent = "Choose a chest.";
-      answerGrid.innerHTML = "";
-      panel.innerHTML = `
-        <div class="chest-screen">
-          <div class="chest-banner">
-            <div class="chest-banner-inner">Choose a Chest!</div>
-          </div>
-          <div class="chest-row">
-            <button class="chest-btn" data-chest="0" type="button"><img src="/chetsicons/chest1.svg" alt="Chest 1" /></button>
-            <button class="chest-btn" data-chest="1" type="button"><img src="/chetsicons/chest2.svg" alt="Chest 2" /></button>
-            <button class="chest-btn" data-chest="2" type="button"><img src="/chetsicons/chest3.svg" alt="Chest 3" /></button>
-          </div>
-        </div>
-      `;
-      const chestButtons = Array.from(panel.querySelectorAll("[data-chest]"));
-      chestButtons.forEach((button) => {
-        button.onclick = async () => {
-          try {
-            if (Date.now() < playerFeedbackLockUntil) return;
-            playerFeedbackLockUntil = Date.now() + 450;
-            chestButtons.forEach((entry) => {
-              entry.disabled = true;
-              entry.classList.add("is-disabled");
-              entry.style.pointerEvents = "none";
-            });
-            await chooseChestOption(Number(button.dataset.chest));
-            playerFeedbackLockUntil = 0;
-            await refreshPlayer();
-          } catch (error) {
-            playerFeedbackLockUntil = 0;
-            statusEl.textContent = error.message;
-            chestButtons.forEach((entry) => {
-              entry.disabled = false;
-              entry.classList.remove("is-disabled");
-              entry.style.pointerEvents = "auto";
-            });
-          }
-        };
+    if (goldquestPage && typeof goldquestPage.handlePlayerPhase === "function") {
+      const handledByGoldquest = await goldquestPage.handlePlayerPhase({
+        data,
+        panel,
+        answerGrid,
+        metaEl,
+        modeText,
+        setStatus,
+        escapeHtml,
+        fitChestLayout,
+        setPlayerShellMode,
+        setPlayerHudState,
+        chooseChestOption,
+        chooseChestTarget,
+        skipChestTarget,
+        completeChestResult,
+        refreshPlayer,
+        isFeedbackLocked: () => Date.now() < playerFeedbackLockUntil,
+        lockFeedbackFor: (durationMs) => {
+          const lockMs = Math.max(0, Number(durationMs) || 0);
+          playerFeedbackLockUntil = Date.now() + lockMs;
+        },
+        clearFeedbackLock: () => {
+          playerFeedbackLockUntil = 0;
+        },
       });
-      let meta = `${modeText} â¢ Chest reward`;
-      if (typeof data.remainingSec === "number") meta += ` â¢ ${data.remainingSec}s left`;
-      metaEl.textContent = meta;
-      return;
-    }
-
-    if (data.chestPhase === "result" && data.chest) {
-      setPlayerShellMode("game");
-      const options = Array.isArray(data.chest.options) ? data.chest.options : [];
-      const selectedIndex = Number(data.chest.selectedIndex);
-      const result = data.chest.result || {};
-      const noInteraction = !!result.noInteraction;
-      const outcomeHeadline = result.headline || result.label || "Chest Result";
-      const outcomeDetail = chestOutcomeDetail(result);
-      const impactHtml = chestImpactMarkup(result);
-      const outcomeMeta = chestOutcomeMeta(result.type);
-      const outcomeClass = `chest-outcome ${outcomeMeta.className}`;
-      setPlayerHudState("correct", noInteraction ? "NO TARGET" : "CHEST");
-      answerGrid.innerHTML = "";
-      statusEl.textContent = result.text || "";
-
-      if (noInteraction) {
-        panel.innerHTML = `
-          <div class="chest-screen">
-            <div class="chest-banner">
-              <div class="chest-banner-inner">No Players to Interact With</div>
-            </div>
-            <button id="chestNextBtn" class="chest-next-btn" type="button">Next</button>
-          </div>
-        `;
-      } else {
-        const choicesHtml = options.map((option, index) => {
-          const icon = chestIconMeta(option.type);
-          return `
-            <div class="result-choice ${index === selectedIndex ? "active" : ""}">
-              <div class="result-icon ${icon.className}"><span>${icon.glyph}</span></div>
-              <div class="result-label">${escapeHtml(option.label)}</div>
-            </div>
-          `;
-        }).join("");
-
-        panel.innerHTML = `
-          <div class="chest-screen" id="chestResultRoot" style="cursor:pointer;">
-            <div class="chest-banner">
-              <div class="chest-banner-inner">Click Anywhere to Go Next</div>
-            </div>
-            <div class="chest-result-row">${choicesHtml}</div>
-            <div class="${outcomeClass}">
-              <div class="chest-outcome-top">
-                <span class="chest-outcome-badge">${outcomeMeta.badge}</span>
-                <div class="chest-outcome-head">${escapeHtml(outcomeHeadline)}</div>
-              </div>
-              <div class="chest-note">${escapeHtml(result.text || "")}</div>
-              ${impactHtml || ""}
-              ${!impactHtml && outcomeDetail ? `<div class="chest-note subtle">${escapeHtml(outcomeDetail)}</div>` : ""}
-            </div>
-          </div>
-        `;
-      }
-
-      const goNext = async () => {
-        try {
-          if (Date.now() < playerFeedbackLockUntil) return;
-          playerFeedbackLockUntil = Date.now() + 350;
-          await completeChestResult();
-          playerFeedbackLockUntil = 0;
-          await refreshPlayer();
-        } catch (error) {
-          playerFeedbackLockUntil = 0;
-          statusEl.textContent = error.message;
-        }
-      };
-
-      const root = document.getElementById("chestResultRoot");
-      if (root) root.onclick = goNext;
-      const nextBtn = document.getElementById("chestNextBtn");
-      if (nextBtn) nextBtn.onclick = goNext;
-
-      let meta = `${modeText} â¢ Chest resolved`;
-      if (typeof data.remainingSec === "number") meta += ` â¢ ${data.remainingSec}s left`;
-      metaEl.textContent = meta;
-      return;
+      if (handledByGoldquest) return;
     }
 
     const media = getQuestionMedia(data.question);
-    setPlayerShellMode("game");
-    setPlayerHudState("", modeText.toUpperCase());
-    statusEl.textContent = "";
+    const puzzleMarkup = modeFamily === "assemble" ? renderPuzzleBoard(data.puzzle, data?.puzzle?.lastRevealedTile) : "";
+	    setPlayerShellMode("game");
+	    setPlayerHudState("", modeText.toUpperCase());
+	    setStatus("");
     const promptClass = media.imageUrl ? "prompt-wrap" : "prompt-wrap prompt-no-media";
     panel.innerHTML = `
+      ${puzzleMarkup}
       <div class="${promptClass}">
         ${media.imageUrl ? `<div class="question-visual"><img src="${escapeHtml(media.imageUrl)}" alt="question" /></div>` : ""}
         <h2 class="question-title">${escapeHtml(media.text || `Question ${data.questionIndex + 1}`)}</h2>
@@ -1071,7 +1258,7 @@ async function refreshPlayer() {
             const isRealCorrect = correctIndex !== null ? btnAnswerIndex === correctIndex : isChosen && correct;
             if (isRealCorrect) {
               el.classList.add("is-right");
-              symbolEl.textContent = "â";
+              symbolEl.textContent = "\u2713";
             } else if (isChosen && !correct) {
               el.classList.add("is-wrong");
               symbolEl.textContent = "x";
@@ -1087,18 +1274,20 @@ async function refreshPlayer() {
           const feedbackText = document.getElementById("feedbackText");
           feedbackEl.classList.remove("hidden");
           feedbackEl.classList.toggle("correct", correct);
-          feedbackIcon.textContent = correct ? "â" : "x";
+          feedbackIcon.textContent = correct ? "\u2713" : "x";
           if (correct && result.awaitingChestChoice) {
             feedbackText.textContent = "Chest incoming";
+          } else if (correct && modeFamily === "assemble" && result?.puzzleReveal?.tileNumber) {
+            feedbackText.textContent = `Tile #${result.puzzleReveal.tileNumber} revealed`;
           } else {
             feedbackText.textContent = revealDelayMs > 0
               ? `Wait ${revealDelaySec % 1 === 0 ? revealDelaySec.toFixed(0) : revealDelaySec} second${revealDelaySec === 1 ? "" : "s"}`
               : "Next question";
           }
 
-          statusEl.textContent = correct
-            ? `+${result.gained} gold${result.awaitingChestChoice ? " | chest time" : ""}`
-            : "Incorrect";
+	          setStatus(correct
+	            ? `+${result.gained} gold${result.awaitingChestChoice ? " | chest time" : result?.puzzleReveal?.tileNumber ? ` | tile #${result.puzzleReveal.tileNumber}` : ""}`
+	            : "Incorrect");
 
           playerFeedbackTimer = setTimeout(async () => {
             playerFeedbackLockUntil = 0;
@@ -1114,18 +1303,18 @@ async function refreshPlayer() {
             const symbolEl = el.querySelector(".tile-symbol");
             if (symbolEl) symbolEl.textContent = "";
           });
-          statusEl.textContent = error.message;
+	          setStatus(error.message);
         }
       };
       answerGrid.appendChild(button);
     });
 
-    let meta = `${modeText} â¢ Question ${data.questionIndex + 1}/${data.targetQuestions}`;
-    if (typeof data.remainingSec === "number") meta += ` â¢ ${data.remainingSec}s left`;
-    metaEl.textContent = meta;
-  } catch (error) {
-    document.getElementById("questionPanel").innerHTML = `<h2 class="question-title">${escapeHtml(error.message)}</h2>`;
-    document.getElementById("answerGrid").innerHTML = "";
+	    let meta = `${modeText} \u2022 Question ${data.questionIndex + 1}/${data.targetQuestions}`;
+	    if (typeof data.remainingSec === "number") meta += ` \u2022 ${data.remainingSec}s left`;
+	    metaEl.textContent = meta;
+	  } catch (error) {
+	    document.getElementById("questionPanel").innerHTML = `<h2 class="question-title">${escapeHtml(error.message)}</h2>`;
+	    document.getElementById("answerGrid").innerHTML = "";
     if (playerPoll) {
       clearInterval(playerPoll);
       playerPoll = null;
@@ -1161,7 +1350,11 @@ document.querySelectorAll(".quick-btn").forEach((btn) => {
 document.getElementById("searchSets").addEventListener("keydown", (event) => {
   if (event.key === "Enter") searchSets();
 });
-
+document.getElementById("gameType").addEventListener("change", updateGameTypeFields);
+document.getElementById("gameTypeFamily").addEventListener("change", updateGameTypeFields);
+updateGameTypeFields();
+document.getElementById("goHostMode").onclick = goToHostModeSetup;
+document.getElementById("backFromHostMode").onclick = () => showView("host");
 document.getElementById("copyJoinLink").onclick = async () => {
   try {
     if (!latestJoinUrl) return;
@@ -1175,7 +1368,7 @@ document.getElementById("copyJoinLink").onclick = async () => {
 document.getElementById("createHostLobby").onclick = async () => {
   try {
     let customSetPayload = selectedCustomSet;
-    if (!selectedSetId && customDraftQuestions.length) {
+    if (!selectedSetId && !customSetPayload && customDraftQuestions.length) {
       customSetPayload = getEditorCustomSet();
     }
     if (!selectedSetId && !customSetPayload) throw new Error("Select a live set or build a custom set.");
@@ -1183,9 +1376,10 @@ document.getElementById("createHostLobby").onclick = async () => {
     const payload = {
       setId: selectedSetId,
       customSet: customSetPayload,
+      gameTypeFamily: document.getElementById("gameTypeFamily").value,
       gameType: document.getElementById("gameType").value,
       questionLimit: Number(document.getElementById("questionLimit").value || 20),
-      timeLimitSec: Number(document.getElementById("timeLimit").value || 120),
+      timeLimitSec: Math.round(Number(document.getElementById("timeLimit").value || 2) * 60),
       maxPlayers: Number(document.getElementById("maxPlayers").value || 60),
       feedbackDelaySec: Number(document.getElementById("feedbackDelay").value || 1),
       shuffleQuestions: document.getElementById("shuffleQuestions").checked,
@@ -1196,6 +1390,7 @@ document.getElementById("createHostLobby").onclick = async () => {
       body: JSON.stringify(payload),
     });
     currentHostGameCode = data.game.code;
+    persistHostSession();
     showView("lobby");
     startStatus.textContent = "Lobby ready.";
     await refreshLobby();
@@ -1206,6 +1401,7 @@ document.getElementById("createHostLobby").onclick = async () => {
       hostStatus.textContent = "AI one-time set was used and cleared from local editor.";
     }
   } catch (error) {
+    if (hostModeStatus) hostModeStatus.textContent = error.message;
     hostStatus.textContent = error.message;
   }
 };
@@ -1221,6 +1417,7 @@ document.getElementById("joinLobby").onclick = async () => {
       body: JSON.stringify({ playerName: name }),
     });
     currentPlayer = { code, id: data.player.playerId, name: data.player.playerName, blook: data.player.blook || null };
+    persistPlayerSession();
     showView("playerGame");
     await refreshPlayer();
     if (playerPoll) clearInterval(playerPoll);
@@ -1234,32 +1431,143 @@ document.getElementById("startGame").onclick = async () => {
   try {
     const data = await api(`/api/games/${currentHostGameCode}/start`, { method: "POST" });
     startStatus.textContent = data.message;
+    persistHostSession();
+    if (isIndexPage) {
+      window.location.assign(getCurrentHostRoute());
+      return;
+    }
     await refreshLobby();
   } catch (error) {
     startStatus.textContent = error.message;
   }
 };
 
-document.getElementById("endGame").onclick = async () => {
-  try {
-    const data = await api(`/api/games/${currentHostGameCode}/end`, { method: "POST" });
-    startStatus.textContent = data.message;
-    await refreshLobby();
-  } catch (error) {
-    startStatus.textContent = error.message;
+async function deleteCurrentLobbyAndExit() {
+  if (currentHostGameCode) {
+    await fetch(`/api/games/${currentHostGameCode}`, { method: "DELETE" });
   }
-};
-
-document.getElementById("closeLobby").onclick = async () => {
-  if (!currentHostGameCode) return showView("home");
-  await fetch(`/api/games/${currentHostGameCode}`, { method: "DELETE" });
   currentHostGameCode = null;
+  clearHostSession();
   if (lobbyPoll) clearInterval(lobbyPoll);
-  showView("home");
-};
+  if (goldquestPage && typeof goldquestPage.onLeaveLobby === "function") {
+    goldquestPage.onLeaveLobby();
+  } else {
+    pauseHostMusic(true);
+    setEndLeaderboardOpen(false);
+  }
+  if (isIndexPage) {
+    showView("home");
+  } else {
+    window.location.assign("/index.html");
+  }
+}
+
+function exitLobbyView() {
+  if (lobbyPoll) clearInterval(lobbyPoll);
+  lobbyPoll = null;
+  if (goldquestPage && typeof goldquestPage.onLeaveLobby === "function") {
+    goldquestPage.onLeaveLobby();
+  } else {
+    pauseHostMusic(true);
+    setEndLeaderboardOpen(false);
+  }
+  clearHostSession();
+  if (isIndexPage) {
+    showView("home");
+  } else {
+    window.location.assign("/index.html");
+  }
+}
+
+const endGameBtn = document.getElementById("endGame");
+if (endGameBtn) {
+  endGameBtn.onclick = async () => {
+    try {
+      const data = await api(`/api/games/${currentHostGameCode}/end`, { method: "POST" });
+      startStatus.textContent = data.message;
+      await refreshLobby();
+    } catch (error) {
+      startStatus.textContent = error.message;
+    }
+  };
+}
+
+const closeLobbyBtn = document.getElementById("closeLobby");
+if (closeLobbyBtn) {
+  closeLobbyBtn.onclick = async () => {
+    try {
+      await deleteCurrentLobbyAndExit();
+    } catch (error) {
+      startStatus.textContent = error.message || "Could not close lobby.";
+    }
+  };
+}
+
+const endShowAllBtn = document.getElementById("endShowAllBtn");
+if (endShowAllBtn) {
+  endShowAllBtn.onclick = () => {
+    setEndLeaderboardOpen(true);
+  };
+}
+
+const closeFullLeaderboardBtn = document.getElementById("closeFullLeaderboard");
+if (closeFullLeaderboardBtn) {
+  closeFullLeaderboardBtn.onclick = () => {
+    setEndLeaderboardOpen(false);
+  };
+}
+
+const fullLeaderboardOverlay = document.getElementById("fullLeaderboardOverlay");
+if (fullLeaderboardOverlay) {
+  fullLeaderboardOverlay.onclick = (event) => {
+    if (event.target === fullLeaderboardOverlay) setEndLeaderboardOpen(false);
+  };
+}
+
+const endExitBtn = document.getElementById("endExitBtn");
+if (endExitBtn) {
+  endExitBtn.onclick = () => {
+    exitLobbyView();
+  };
+}
+
+const endActionBtn = document.getElementById("endActionBtn");
+if (endActionBtn) {
+  endActionBtn.onclick = async () => {
+    try {
+      await deleteCurrentLobbyAndExit();
+    } catch (error) {
+      startStatus.textContent = error.message || "Could not close lobby.";
+    }
+  };
+}
+
+window.addEventListener("resize", () => {
+  fitChestLayout();
+});
 
 document.getElementById("aiImageTheme").disabled = !document.getElementById("aiWithImages").checked;
 setEditorSource("manual");
-renderCustomQuestionList();
-searchSets();
+if (isIndexPage) {
+  renderCustomQuestionList();
+  searchSets();
+}
 prefillJoinCodeFromQuery();
+if (window.GreenitPages && typeof window.GreenitPages.applyEntryPreset === "function") {
+  window.GreenitPages.applyEntryPreset({
+    showView,
+    updateGameTypeFields,
+  });
+}
+
+(async () => {
+  if (isGoldquestHostPage) {
+    const resumed = await resumeHostGamePage();
+    if (!resumed) showView("host");
+    return;
+  }
+  if (isGoldquestPlayerPage) {
+    const resumed = await resumePlayerGamePage();
+    if (!resumed) showView("join");
+  }
+})();

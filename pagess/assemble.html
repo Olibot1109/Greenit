@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Greenit Block Builder</title>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search || "");
+      params.set("entry", "assemble");
+      window.location.replace("/?" + params.toString());
+    })();
+  </script>
+</head>
+<body>
+  Redirecting to Block Builder...
+</body>
+</html>
