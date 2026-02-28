@@ -16,6 +16,9 @@
     let chestResultStep = 'reveal';
     let chestResultKey = '';
     let currentAnswers = [];
+    let currentStageId = '';
+    let lastQuestionRenderKey = '';
+    let fitRafId = 0;
 
     function escapeHtml(text) {
       const div = document.createElement('div');
@@ -29,6 +32,7 @@
     }
 
     function showStage(id) {
+      currentStageId = id;
       stageIds.forEach((stageId) => {
         const el = document.getElementById(stageId);
         if (el) el.classList.toggle('active', stageId === id);
@@ -133,8 +137,21 @@
     }
 
     function showQuestion(data) {
-      showStage('questionStage');
       const q = data.question || {};
+      const answers = Array.isArray(q.answers) ? q.answers : [];
+      const renderKey = [
+        String(Number(data.questionIndex || 0)),
+        String(q.q || '').trim(),
+        String(q.imageUrl || '').trim(),
+        answers.join('\u0001'),
+      ].join('\u0002');
+
+      if (renderKey === lastQuestionRenderKey && currentStageId === 'questionStage') {
+        return;
+      }
+
+      lastQuestionRenderKey = renderKey;
+      showStage('questionStage');
       document.getElementById('questionText').textContent = String(q.q || '').trim() || `Question ${(Number(data.questionIndex || 0) + 1)}`;
 
       const img = document.getElementById('questionImage');
@@ -145,14 +162,17 @@
         img.classList.add('hidden');
       }
 
-      const answers = Array.isArray(q.answers) ? q.answers : [];
       currentAnswers = answers.slice();
       const classes = ['a-yellow', 'a-blue', 'a-green', 'a-red'];
       const grid = document.getElementById('answerGrid');
       grid.innerHTML = answers.map((answer, index) => `
         <button class="answer-btn ${classes[index % classes.length]}" onclick="submitAnswer(${index})">${escapeHtml(answer)}</button>
       `).join('');
-      requestAnimationFrame(fitQuestionLayout);
+      if (fitRafId) cancelAnimationFrame(fitRafId);
+      fitRafId = requestAnimationFrame(() => {
+        fitQuestionLayout();
+        fitRafId = 0;
+      });
     }
 
     async function submitAnswer(answerIndex) {
@@ -477,6 +497,10 @@
 
     window.addEventListener('resize', () => {
       if (document.getElementById('questionStage')?.classList.contains('active')) {
-        fitQuestionLayout();
+        if (fitRafId) cancelAnimationFrame(fitRafId);
+        fitRafId = requestAnimationFrame(() => {
+          fitQuestionLayout();
+          fitRafId = 0;
+        });
       }
     });

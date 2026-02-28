@@ -277,6 +277,24 @@
       color: #2e7d32;
     }
 
+    .create-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .live-questions-list {
+      max-height: 460px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    @media (max-width: 900px) {
+      .create-layout { grid-template-columns: 1fr; }
+      .live-questions-list { max-height: 360px; }
+    }
+
     .ai-options {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -629,89 +647,23 @@
       </div>
     </div>
 
-    <!-- Preview & Create Buttons -->
-    <div class="panel" style="text-align: center;">
-      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-        <button onclick="previewGame()" class="secondary" style="font-size: 1.1rem; padding: 14px 32px;">
-          <i class="fas fa-eye"></i> Preview
+    <div class="create-layout">
+      <div class="panel" style="text-align: center;">
+        <h2>3. Create Game Lobby</h2>
+        <button id="createGameBtn" onclick="createGame(this)" style="font-size: 1.3rem; padding: 16px 40px;">
+          <i class="fas fa-play-circle"></i> Create Game Lobby
         </button>
-        <button id="openPreviewBtn" onclick="requestCreateGame()" style="font-size: 1.3rem; padding: 16px 40px;">
-          <i class="fas fa-play-circle"></i> Preview & Create Game Lobby
-        </button>
+        <div id="createStatus" class="status"></div>
       </div>
-      <div id="createStatus" class="status"></div>
-    </div>
 
-    <!-- Preview Modal -->
-    <div id="previewModal" class="preview-modal hidden">
-      <div class="preview-content">
-        <div class="preview-header">
-          <h2><i class="fas fa-eye"></i> Game Preview</h2>
-          <button class="close-btn" onclick="closePreview()">
-            <i class="fas fa-times"></i>
-          </button>
+      <div class="panel">
+        <h2>Selected Questions</h2>
+        <div id="selectedSetMeta" class="preview-item">
+          <span class="preview-label">Set:</span>
+          <span class="preview-value">None selected</span>
         </div>
-        <div class="preview-body">
-          <div class="preview-section">
-            <h3><i class="fas fa-gamepad"></i> Game Mode</h3>
-            <div class="preview-item">
-              <span class="preview-label">Mode:</span>
-              <span class="preview-value" id="previewMode">Gold Quest</span>
-            </div>
-          </div>
-
-          <div class="preview-section">
-            <h3><i class="fas fa-cog"></i> Game Settings</h3>
-            <div class="preview-grid">
-              <div class="preview-item">
-                <span class="preview-label">Time Limit:</span>
-                <span class="preview-value" id="previewTime">5 minutes</span>
-              </div>
-              <div class="preview-item">
-                <span class="preview-label">Max Players:</span>
-                <span class="preview-value" id="previewMaxPlayers">60</span>
-              </div>
-              <div class="preview-item">
-                <span class="preview-label">Answer Delay:</span>
-                <span class="preview-value" id="previewDelay">1 second</span>
-              </div>
-              <div class="preview-item">
-                <span class="preview-label">Shuffle Questions:</span>
-                <span class="preview-value" id="previewShuffle">Yes</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="preview-section">
-            <h3><i class="fas fa-question-circle"></i> Question Set</h3>
-            <div class="preview-item">
-              <span class="preview-label">Set Name:</span>
-              <span class="preview-value" id="previewSetName">-</span>
-            </div>
-            <div class="preview-item">
-              <span class="preview-label">Question Count:</span>
-              <span class="preview-value" id="previewQuestionCount">-</span>
-            </div>
-            <div class="preview-item">
-              <span class="preview-label">Source:</span>
-              <span class="preview-value" id="previewSetSource">-</span>
-            </div>
-          </div>
-
-          <div class="preview-section" id="previewQuestionsSection">
-            <h3><i class="fas fa-list"></i> Sample Questions</h3>
-            <div id="previewQuestionsList" class="preview-questions">
-              <p class="preview-empty">No questions to preview</p>
-            </div>
-          </div>
-        </div>
-        <div class="preview-footer">
-          <button class="secondary" onclick="closePreview()">
-            <i class="fas fa-times"></i> Close
-          </button>
-          <button id="confirmCreateBtn" onclick="createGameFromPreview(this)">
-            <i class="fas fa-play-circle"></i> Create Game Lobby
-          </button>
+        <div id="liveQuestionsList" class="preview-questions live-questions-list">
+          <p class="preview-empty">Pick a set to see questions here.</p>
         </div>
       </div>
     </div>

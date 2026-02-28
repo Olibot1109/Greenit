@@ -1,10 +1,9 @@
     let selectedSet = null;
     let customQuestions = [];
     let currentMode = 'goldquest';
-    let hasPreviewedCurrentSetup = false;
 
     function markPreviewDirty() {
-      hasPreviewedCurrentSetup = false;
+      renderSelectedQuestionsColumn();
     }
 
     // Mode selection
@@ -53,24 +52,27 @@
     async function selectSet(element, id) {
       document.querySelectorAll('.set-card').forEach(c => c.classList.remove('selected'));
       element.classList.add('selected');
+      const fallbackTitle = element.querySelector('h4')?.textContent?.trim() || 'Selected Set';
+      selectedSet = { id, type: 'remote', title: fallbackTitle, questions: [], loading: true };
+      markPreviewDirty();
       
       // Fetch full set data including questions
       try {
-        const res = await fetch(`/api/quiz/set/${id}`);
+        const res = await fetch(`/api/quiz/set?id=${encodeURIComponent(id)}`);
         const data = await res.json();
         if (data.set && data.set.questions) {
           selectedSet = { 
             id, 
             type: 'remote',
-            title: data.set.title,
+            title: data.set.title || fallbackTitle,
             questions: data.set.questions
           };
         } else {
-          selectedSet = { id, type: 'remote' };
+          selectedSet = { id, type: 'remote', title: fallbackTitle, questions: [] };
         }
         markPreviewDirty();
       } catch (err) {
-        selectedSet = { id, type: 'remote' };
+        selectedSet = { id, type: 'remote', title: fallbackTitle, questions: [] };
         markPreviewDirty();
       }
     }
@@ -210,10 +212,6 @@
       renderCustomQuestions();
     }
 
-    function requestCreateGame() {
-      previewGame();
-    }
-
     // Create game
     async function createGame(btnEl) {
       if (!selectedSet) {
@@ -221,12 +219,7 @@
         return;
       }
 
-      if (!hasPreviewedCurrentSetup) {
-        showStatus('createStatus', 'Please preview questions before creating the game', 'error');
-        return;
-      }
-
-      const btn = btnEl || document.getElementById('confirmCreateBtn');
+      const btn = btnEl || document.getElementById('createGameBtn');
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
 
@@ -280,25 +273,25 @@
       return div.innerHTML;
     }
 
-    // Preview functions
-    function previewGame() {
+    function renderSelectedQuestionsColumn() {
+      const metaEl = document.getElementById('selectedSetMeta');
+      const listEl = document.getElementById('liveQuestionsList');
+      if (!metaEl || !listEl) return;
       if (!selectedSet) {
-        showStatus('createStatus', 'Please select or create a question set first', 'error');
+        metaEl.innerHTML = '<span class="preview-label">Set:</span><span class="preview-value">None selected</span>';
+        listEl.innerHTML = '<p class="preview-empty">Pick a set to see questions here.</p>';
         return;
       }
 
-      // Update basic settings
-      document.getElementById('previewMode').textContent = currentMode === 'goldquest' ? 'Gold Quest' : currentMode;
-      
-      const timeLimit = parseInt(document.getElementById('timeLimit').value);
-      document.getElementById('previewTime').textContent = timeLimit + (timeLimit === 1 ? ' minute' : ' minutes');
-      document.getElementById('previewMaxPlayers').textContent = document.getElementById('maxPlayers').value;
-      
-      const delay = parseFloat(document.getElementById('feedbackDelay').value);
-      document.getElementById('previewDelay').textContent = delay === 0 ? 'None' : (delay + (delay === 1 ? ' second' : ' seconds'));
-      document.getElementById('previewShuffle').textContent = document.getElementById('shuffleQuestions').checked ? 'Yes' : 'No';
+      if (selectedSet.type === 'remote' && selectedSet.loading) {
+        metaEl.innerHTML = `
+          <span class="preview-label">Set:</span>
+          <span class="preview-value">${escapeHtml(selectedSet.title || 'Selected Set')} (loading...)</span>
+        `;
+        listEl.innerHTML = '<p class="preview-empty"><i class="fas fa-spinner fa-spin"></i> Loading questions...</p>';
+        return;
+      }
 
-      // Update set info
       let setName = '-';
       let questionCount = '-';
       let source = '-';
@@ -322,21 +315,18 @@
         source = 'AI Generated';
       }
 
-      document.getElementById('previewSetName').textContent = setName;
-      document.getElementById('previewQuestionCount').textContent = questionCount;
-      document.getElementById('previewSetSource').textContent = source;
+      metaEl.innerHTML = `
+        <span class="preview-label">Set:</span>
+        <span class="preview-value">${escapeHtml(setName)} (${escapeHtml(String(questionCount))})</span>
+      `;
 
-      // Show sample questions
-      const questionsList = document.getElementById('previewQuestionsList');
-      const questionsSection = document.getElementById('previewQuestionsSection');
-      
       let questionsToShow = [];
       if (selectedSet.questions && selectedSet.questions.length > 0) {
-        questionsToShow = selectedSet.questions.slice(0, 5);
+        questionsToShow = selectedSet.questions;
       }
 
       if (questionsToShow.length > 0) {
-        questionsList.innerHTML = questionsToShow.map((q, i) => {
+        listEl.innerHTML = questionsToShow.map((q, i) => {
           const answersHtml = q.answers.map((a, ai) => {
             const isCorrect = ai === q.correct;
             return `<span class="q-answer ${isCorrect ? 'correct' : ''}">${String.fromCharCode(65 + ai)}. ${escapeHtml(a)}${isCorrect ? ' ✓' : ''}</span>`;
@@ -352,31 +342,9 @@
             </div>
           `;
         }).join('');
-        
-        if (selectedSet.questions.length > 5) {
-          questionsList.innerHTML += `<p style="text-align: center; color: rgba(0,0,0,0.5); margin-top: 12px; font-weight: 600;">... and ${selectedSet.questions.length - 5} more questions</p>`;
-        }
-        questionsSection.classList.remove('hidden');
       } else {
-        questionsList.innerHTML = '<p class="preview-empty">Questions will be loaded when the game starts</p>';
-        questionsSection.classList.remove('hidden');
+        listEl.innerHTML = `<p class="preview-empty">Questions will be loaded when the game starts (${escapeHtml(source)})</p>`;
       }
-
-      // Show modal
-      hasPreviewedCurrentSetup = true;
-      document.getElementById('previewModal').classList.remove('hidden');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closePreview() {
-      document.getElementById('previewModal').classList.add('hidden');
-      document.body.style.overflow = '';
-    }
-
-    function createGameFromPreview(btnEl) {
-      closePreview();
-      // Small delay to let modal close animation play
-      setTimeout(() => createGame(btnEl), 100);
     }
 
     document.querySelectorAll('#timeLimit, #maxPlayers, #feedbackDelay, #shuffleQuestions').forEach((el) => {
@@ -384,18 +352,4 @@
       el.addEventListener('input', markPreviewDirty);
     });
 
-    // Close modal on backdrop click
-    document.addEventListener('click', (e) => {
-      const modal = document.getElementById('previewModal');
-      if (e.target === modal) {
-        closePreview();
-      }
-    });
-
-    // Close modal on Escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closePreview();
-      }
-    });
-
+    renderSelectedQuestionsColumn();

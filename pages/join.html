@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join Game - Greenit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    :root {
+      --bg: linear-gradient(180deg, #52c3df 0%, #2fa6cb 100%);
+      --panel: #eef4fb;
+      --text: #243455;
+      --purple: #944db4;
+      --purple-dark: #7b3f95;
+      --danger-bg: #ffebee;
+      --danger-text: #b71c1c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Nunito", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      width: min(560px, 96vw);
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 12px 0 rgba(0,0,0,0.18);
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "Baloo 2", cursive;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      line-height: 1;
+      text-align: center;
+      color: #1d2f53;
+    }
+
+    .sub {
+      margin: 8px 0 0;
+      text-align: center;
+      font-size: 1.05rem;
+      color: rgba(24,39,75,0.8);
+      font-weight: 700;
+    }
+
+    .game-code {
+      margin: 16px auto 0;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-weight: 800;
+      background: rgba(148,77,180,0.14);
+      color: #5f2f73;
+    }
+
+    .field {
+      margin-top: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #26395f;
+    }
+
+    input {
+      width: 100%;
+      border: 2px solid rgba(0,0,0,0.14);
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-size: 1.1rem;
+      font-family: "Nunito", sans-serif;
+      font-weight: 700;
+      color: var(--text);
+      outline: none;
+      background: #fff;
+    }
+
+    input:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(148,77,180,0.18);
+    }
+
+    .actions {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(180deg, var(--purple) 0%, var(--purple-dark) 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.1rem;
+      padding: 13px 14px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.18);
+      font-family: "Nunito", sans-serif;
+    }
+
+    button:disabled {
+      opacity: 0.72;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 12px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 700;
+      display: none;
+    }
+
+    .status.error {
+      display: block;
+      background: var(--danger-bg);
+      color: var(--danger-text);
+    }
+
+    .back {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 0.96rem;
+    }
+
+    .back a {
+      color: #17365f;
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .back a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Join Game</h1>
+    <p class="sub">Enter your username to join.</p>
+    <div class="game-code" id="gameCodeLabel">Code: ------</div>
+
+    <div class="field">
+      <label for="joinName">Username</label>
+      <input id="joinName" maxlength="20" placeholder="Your name" autocomplete="nickname" />
+    </div>
+
+    <div class="actions">
+      <button id="joinBtn" type="button" onclick="joinGame()"><i class="fas fa-play"></i> Join</button>
+    </div>
+
+    <div id="joinStatus" class="status"></div>
+    <div class="back"><a href="/index.html"><i class="fas fa-arrow-left"></i> Back</a></div>
+  </main>
+
+  <script src="/libs/join-page.js"></script>
+</body>
+</html>

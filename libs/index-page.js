@@ -1,3 +1,9 @@
+    const pageParams = new URLSearchParams(window.location.search);
+    const joinCodeFromQuery = String(pageParams.get('join') || pageParams.get('code') || '').trim().toUpperCase();
+    if (joinCodeFromQuery) {
+      window.location.replace(`/join.html?join=${encodeURIComponent(joinCodeFromQuery)}`);
+    }
+
     function showHome() {
       document.getElementById('joinScreen').classList.add('hidden');
       document.getElementById('homeScreen').classList.remove('hidden');

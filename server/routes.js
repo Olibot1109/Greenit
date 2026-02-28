@@ -80,6 +80,7 @@ function createRoutes() {
     const htmlPages = {
       '/': 'index.html',
       '/index.html': 'index.html',
+      '/join.html': 'join.html',
       '/host-setup.html': 'host-setup.html',
       '/host-lobby.html': 'host-lobby.html',
       '/lobby.html': 'lobby.html',
