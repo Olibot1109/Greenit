@@ -3,6 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Greenit is a live classroom quiz game with Gold Quest, Fishing Frenzy, and more." />
+  <meta name="theme-color" content="#20c5d5" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Greenit" />
+  <meta property="og:title" content="Greenit | Live Quiz Game" />
+  <meta property="og:description" content="Host a lobby, share a game code, and play live quiz game modes." />
+  <meta property="og:image" content="/icons/Bingo.svg" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="Greenit | Live Quiz Game" />
+  <meta property="twitter:description" content="Host a lobby, share a game code, and play live quiz game modes." />
+  <meta property="twitter:image" content="/icons/Bingo.svg" />
   <title>Greenit</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" />
   <style>
@@ -167,7 +178,7 @@
 
     .game-modes {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
       gap: 10px;
       margin-bottom: 16px;
     }
@@ -262,6 +273,11 @@
             <i class="fas fa-skull"></i>
             <h3>Gold Quest</h3>
             <p>Answer to earn gold and open chests</p>
+          </div>
+          <div class="mode-card" data-mode="fishingfrenzy" onclick="selectMode(this)">
+            <i class="fas fa-fish"></i>
+            <h3>Fishing Frenzy</h3>
+            <p>Fast-paced fishing theme with chest rewards</p>
           </div>
         </div>
 

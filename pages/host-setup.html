@@ -99,7 +99,7 @@
 
     .mode-selector {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
       margin-bottom: 16px;
     }
@@ -538,6 +538,11 @@
           <i class="fas fa-skull"></i>
           <h4>Gold Quest</h4>
           <small>Collect gold from chests</small>
+        </div>
+        <div class="mode-option" data-mode="fishingfrenzy" onclick="selectMode('fishingfrenzy')">
+          <i class="fas fa-fish"></i>
+          <h4>Fishing Frenzy</h4>
+          <small>Hook rewards with chest gameplay</small>
         </div>
       </div>
 

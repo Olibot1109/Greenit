@@ -2,12 +2,49 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 const config = require('./config');
-const { logInfo, logWarn, logDebug, sendJson, sendText, parseBody, truncateLogString, randomId, normalizeAbsoluteHttpUrl, sanitizeUrlForLog, clampGameGold, getBlookById, getTakenBlookIds } = require('./utils');
+const { logInfo, logWarn, logDebug, sendJson, sendText, parseBody, truncateLogString, randomId, normalizeAbsoluteHttpUrl, sanitizeUrlForLog, normalizeGold, clampGameGold, getBlookById, getTakenBlookIds } = require('./utils');
 const { requestBinary } = require('./http-client');
 const { isWikimediaHost, inferImageContentType } = require('./image-search');
 const { searchQuizSets, getRemoteSet, parseQuizGeneratePayload, generateQuizSetWithGroq, validateHostPayload, validateJoinPayload } = require('./quiz-api');
-const { createHostedGame, publicGame, endGameWhenTimerExpires, createPendingChest, getChestPayload, getChestTargetChoices, resolveChestChoice, createChestSkipResult, INTERACTION_CHEST_TYPES } = require('./game-logic');
+const {
+  createHostedGame,
+  publicGame,
+  endGameWhenTimerExpires,
+  createPendingChest,
+  getChestPayload,
+  getChestTargetChoices,
+  resolveChestChoice,
+  createChestSkipResult,
+  INTERACTION_CHEST_TYPES,
+  createFishingState,
+  ensureFishingState,
+  advanceFishingState,
+  getFishingPayload,
+  maybeRollPotionEffect,
+  setFishingWorldEffect,
+  getFishingWorldEffect,
+  rollFishingCatch,
+  randomBiteWaitMs,
+} = require('./game-logic');
 const { createPuzzleState, getPuzzlePayload, revealNextPuzzleTile } = require('./assemble-logic');
+
+function getLbsLeader(game) {
+  if (!game || !Array.isArray(game.players) || !game.players.length) return null;
+  const sorted = [...game.players].sort((a, b) => {
+    const lbsDiff = Number(b?.gold || 0) - Number(a?.gold || 0);
+    if (lbsDiff !== 0) return lbsDiff;
+    const answeredDiff = Number(b?.questionIndex || 0) - Number(a?.questionIndex || 0);
+    if (answeredDiff !== 0) return answeredDiff;
+    return String(a?.playerName || '').localeCompare(String(b?.playerName || ''));
+  });
+  const top = sorted[0];
+  if (!top) return null;
+  return {
+    playerId: top.playerId,
+    playerName: top.playerName || 'Player',
+    lbs: normalizeGold(Number(top.gold || 0)),
+  };
+}
 
 function createRoutes() {
   return function routes(req, res) {
@@ -86,6 +123,8 @@ function createRoutes() {
       '/lobby.html': 'lobby.html',
       '/goldquesthost.html': 'goldquesthost.html',
       '/goldquestplay.html': 'goldquestplay.html',
+      '/fishingfrenzyhost.html': 'fishingfrenzyhost.html',
+      '/fishingfrenzyplay.html': 'fishingfrenzyplay.html',
       '/play.html': 'play.html'
     };
 
@@ -106,6 +145,18 @@ function createRoutes() {
         return sendJson(res, 400, { error: 'Invalid icon path' });
       }
       const iconPath = path.join(__dirname, '..', 'chetsicons', fileName);
+      return fs.readFile(iconPath, (error, data) => {
+        if (error) return sendJson(res, 404, { error: 'Icon not found' });
+        return sendText(res, 200, data, 'image/svg+xml; charset=utf-8');
+      });
+    }
+
+    if (req.method === 'GET' && pathname.startsWith('/icons/')) {
+      const fileName = path.basename(pathname);
+      if (!/^[a-zA-Z0-9._-]+\.svg$/.test(fileName)) {
+        return sendJson(res, 400, { error: 'Invalid icon path' });
+      }
+      const iconPath = path.join(__dirname, '..', 'icons', fileName);
       return fs.readFile(iconPath, (error, data) => {
         if (error) return sendJson(res, 404, { error: 'Icon not found' });
         return sendText(res, 200, data, 'image/svg+xml; charset=utf-8');
@@ -355,6 +406,7 @@ function createRoutes() {
             gold: 0,
             questionIndex: 0,
             pendingChest: null,
+            fishing: game.settings?.gameTypeFamily === 'fishingfrenzy' ? createFishingState() : null,
           };
 
           game.players.push(player);
@@ -479,17 +531,27 @@ function createRoutes() {
       if (!player) return sendJson(res, 404, { error: 'Player not found' });
       clampGameGold(game);
       endGameWhenTimerExpires(game, { requestId: reqInfo.requestId });
+      const modeFamily = game.settings.gameTypeFamily || 'goldquest';
+      const isFishingMode = modeFamily === 'fishingfrenzy';
+      const lbsLeader = isFishingMode ? getLbsLeader(game) : null;
+      if (isFishingMode) {
+        ensureFishingState(player);
+        advanceFishingState(player);
+      }
+      const fishingWorldEffect = isFishingMode ? getFishingWorldEffect(game) : null;
 
       if (game.state === 'ended') {
         return sendJson(res, 200, {
           state: 'ended',
           ended: true,
           mode: game.mode,
-          modeFamily: game.settings.gameTypeFamily || 'goldquest',
+          modeFamily,
           gold: player.gold,
           puzzle: getPuzzlePayload(game),
           playerName: player.playerName,
           message: 'Host ended the game.',
+          ...(isFishingMode ? { winner: lbsLeader } : {}),
+          ...(isFishingMode ? { fishing: getFishingPayload(player), fishingWorldEffect } : {}),
         });
       }
 
@@ -499,7 +561,7 @@ function createRoutes() {
           state: game.state,
           waiting: true,
           mode: game.mode,
-          modeFamily: game.settings.gameTypeFamily || 'goldquest',
+          modeFamily,
           gold: player.gold,
           puzzle: getPuzzlePayload(game),
           playerName: player.playerName,
@@ -509,6 +571,7 @@ function createRoutes() {
             takenIds,
             current: player.blook || null,
           },
+          ...(isFishingMode ? { fishing: getFishingPayload(player), fishingWorldEffect } : {}),
         });
       }
 
@@ -516,11 +579,11 @@ function createRoutes() {
       const remainingSec = hasTimer ? Math.max(0, Math.floor((new Date(game.endsAt).getTime() - Date.now()) / 1000)) : null;
       const limit = game.settings.questionLimit;
 
-      if (player.pendingChest) {
+      if (player.pendingChest && !isFishingMode) {
         return sendJson(res, 200, {
           state: 'live',
           mode: game.mode,
-          modeFamily: game.settings.gameTypeFamily || 'goldquest',
+          modeFamily,
           playerName: player.playerName,
           gold: player.gold,
           questionIndex: player.questionIndex,
@@ -547,13 +610,36 @@ function createRoutes() {
           state: 'finished',
           finished: true,
           mode: game.mode,
-          modeFamily: game.settings.gameTypeFamily || 'goldquest',
+          modeFamily,
           playerName: player.playerName,
           gold: player.gold,
           puzzle: getPuzzlePayload(game),
           answered: player.questionIndex,
           remainingSec,
+          ...(isFishingMode ? { winner: lbsLeader } : {}),
+          ...(isFishingMode ? { fishing: getFishingPayload(player), fishingWorldEffect } : {}),
         });
+      }
+
+      if (isFishingMode) {
+        const fishing = getFishingPayload(player);
+        if (fishing.phase !== 'question') {
+          return sendJson(res, 200, {
+            state: 'live',
+            mode: game.mode,
+            modeFamily,
+            playerName: player.playerName,
+            gold: player.gold,
+            questionIndex: player.questionIndex,
+            gameType: game.settings.gameType,
+            remainingSec,
+            targetQuestions: limit,
+            feedbackDelaySec: game.settings.feedbackDelaySec,
+            puzzle: getPuzzlePayload(game),
+            fishing,
+            fishingWorldEffect,
+          });
+        }
       }
 
       const question = game.set.questions[player.questionIndex % game.set.questions.length] || null;
@@ -562,7 +648,7 @@ function createRoutes() {
       return sendJson(res, 200, {
         state: 'live',
         mode: game.mode,
-        modeFamily: game.settings.gameTypeFamily || 'goldquest',
+        modeFamily,
         playerName: player.playerName,
         gold: player.gold,
         questionIndex: player.questionIndex,
@@ -576,6 +662,7 @@ function createRoutes() {
           answers: question.answers,
           imageUrl: question.imageUrl || null,
         },
+        ...(isFishingMode ? { fishing: getFishingPayload(player), fishingWorldEffect } : {}),
       });
     }
 
@@ -589,15 +676,29 @@ function createRoutes() {
       endGameWhenTimerExpires(game, { requestId: reqInfo.requestId });
       if (game.state === 'ended') return sendJson(res, 410, { error: 'Game ended by host.' });
       if (game.state !== 'live') return sendJson(res, 400, { error: 'Game has not started.' });
-      if (player.pendingChest) return sendJson(res, 409, { error: 'Resolve your chest first.' });
+      const modeFamily = game.settings.gameTypeFamily || 'goldquest';
+      const isFishingMode = modeFamily === 'fishingfrenzy';
+      if (!isFishingMode && player.pendingChest) return sendJson(res, 409, { error: 'Resolve your chest first.' });
 
       parseBody(req)
         .then((body) => {
           const hasTimer = ['timed', 'hybrid'].includes(game.settings.gameType);
           const timedScoring = game.settings.gameType === 'timed';
-          const isAssembleMode = game.settings.gameTypeFamily === 'assemble';
+          const isAssembleMode = modeFamily === 'assemble';
           const remainingSec = hasTimer ? Math.max(0, Math.floor((new Date(game.endsAt).getTime() - Date.now()) / 1000)) : 999;
           if (hasTimer && remainingSec <= 0) return sendJson(res, 200, { finished: true, gold: player.gold });
+
+          if (isFishingMode) {
+            ensureFishingState(player);
+            advanceFishingState(player);
+            if (player.fishing.phase !== 'question') {
+              return sendJson(res, 409, {
+                error: 'Pull your rod before answering.',
+                fishing: getFishingPayload(player),
+                fishingWorldEffect: getFishingWorldEffect(game),
+              });
+            }
+          }
 
           const index = Number(body.answerIndex);
           const question = game.set.questions[player.questionIndex % game.set.questions.length];
@@ -611,10 +712,11 @@ function createRoutes() {
           let gained = 0;
           let awaitingChestChoice = false;
           let puzzleReveal = null;
+          let fishingResult = null;
           if (correct) {
             if (isAssembleMode) {
               gained = timedScoring ? Math.floor(60 + Math.random() * 121) : Math.floor(90 + Math.random() * 181);
-              player.gold += gained;
+              player.gold = normalizeGold(player.gold + gained);
               puzzleReveal = revealNextPuzzleTile(game);
               if (puzzleReveal?.tileNumber) {
                 game.eventLog.push({
@@ -623,10 +725,94 @@ function createRoutes() {
                   text: `${player.playerName} revealed tile #${puzzleReveal.tileNumber} (${puzzleReveal.revealedCount}/${puzzleReveal.totalTiles}).`,
                 });
               }
+            } else if (isFishingMode) {
+              const pendingCatch = player.fishing?.pendingCatch || rollFishingCatch();
+              gained = normalizeGold(Number(pendingCatch.lbs || 0));
+              player.gold = normalizeGold(player.gold + gained);
+              const tide = pendingCatch.tide?.active ? { ...pendingCatch.tide } : null;
+              const catchEvent = pendingCatch.event?.active ? { ...pendingCatch.event } : null;
+              const rarity = String(pendingCatch.rarity || 'common');
+              const tideText = tide
+                ? ` ${tide.label} x${Number(tide.multiplier || 1).toFixed(1)}! +${Number(tide.bonusLbs || 0).toLocaleString()} bonus lbs.`
+                : '';
+              const eventText = catchEvent
+                ? ` ${catchEvent.label}! +${Number(catchEvent.bonusLbs || 0).toLocaleString()} bonus lbs${catchEvent.tierAfter && catchEvent.tierAfter !== pendingCatch.baseTier ? `, boosted to ${catchEvent.tierAfter} tier` : ''}.`
+                : '';
+              const rareText = rarity === 'rare' ? ' Rare encounter!' : '';
+              fishingResult = {
+                caught: true,
+                name: pendingCatch.name,
+                tier: pendingCatch.tier,
+                rarity,
+                lbs: gained,
+                imageUrl: pendingCatch.imageUrl || null,
+                tide,
+                event: catchEvent,
+                text: `You caught a ${pendingCatch.name}! +${gained.toLocaleString()} lbs.${tideText}${eventText}${rareText}`,
+              };
+              player.fishing.phase = 'result';
+              player.fishing.lastResult = fishingResult;
+              player.fishing.pendingCatch = pendingCatch;
+              game.eventLog.push({
+                at: new Date().toISOString(),
+                type: 'catch',
+                id: `catch-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
+                playerId: player.playerId,
+                playerName: player.playerName,
+                catchName: pendingCatch.name,
+                catchTier: pendingCatch.tier,
+                catchRarity: rarity,
+                lbs: gained,
+                imageUrl: pendingCatch.imageUrl || null,
+                tideLabel: tide?.label || null,
+                eventLabel: catchEvent?.label || null,
+                text: `${player.playerName} caught a ${pendingCatch.tier}-tier ${pendingCatch.name}${rarity === 'rare' ? ' [RARE]' : ''} for ${gained.toLocaleString()} lbs${tide ? ` during ${tide.label}` : ''}${catchEvent ? ` with ${catchEvent.label}` : ''}.`,
+              });
+              if (catchEvent) {
+                game.eventLog.push({
+                  at: new Date().toISOString(),
+                  type: 'event',
+                  text: `${player.playerName} triggered ${catchEvent.label} for +${Number(catchEvent.bonusLbs || 0).toLocaleString()} bonus lbs.`,
+                });
+              }
+
+              const potion = maybeRollPotionEffect();
+              if (potion) {
+                const worldEffect = setFishingWorldEffect(game, potion);
+                if (worldEffect) {
+                  game.eventLog.push({
+                    at: new Date().toISOString(),
+                    type: 'potion',
+                    text: `${player.playerName} found a ${worldEffect.label}! It affects everyone.`,
+                  });
+                }
+              }
             } else {
               player.pendingChest = createPendingChest();
               awaitingChestChoice = true;
             }
+          } else if (isFishingMode) {
+            const pendingCatch = player.fishing?.pendingCatch || rollFishingCatch();
+            const tide = pendingCatch.tide?.active ? { ...pendingCatch.tide } : null;
+            fishingResult = {
+              caught: false,
+              name: pendingCatch.name,
+              tier: pendingCatch.tier,
+              lbs: normalizeGold(Number(pendingCatch.lbs || 0)),
+              imageUrl: pendingCatch.imageUrl || null,
+              tide,
+              text: tide
+                ? `You lost the ${pendingCatch.name} during ${tide.label}. Cast again.`
+                : `You lost the ${pendingCatch.name}. Cast again.`,
+            };
+            player.fishing.phase = 'result';
+            player.fishing.lastResult = fishingResult;
+            player.fishing.pendingCatch = pendingCatch;
+            game.eventLog.push({
+              at: new Date().toISOString(),
+              type: 'miss',
+              text: `${player.playerName} lost a ${pendingCatch.tier}-tier ${pendingCatch.name}${tide ? ` during ${tide.label}` : ''}.`,
+            });
           }
           player.questionIndex += 1;
 
@@ -642,6 +828,7 @@ function createRoutes() {
             puzzle: getPuzzlePayload(game),
             nextQuestion: player.questionIndex,
             remainingSec,
+            ...(isFishingMode ? { fishing: getFishingPayload(player), fishingResult, fishingWorldEffect: getFishingWorldEffect(game) } : {}),
           });
           logDebug('game.answer.submitted', {
             requestId: reqInfo.requestId,
@@ -654,7 +841,109 @@ function createRoutes() {
             questionIndex: player.questionIndex,
             awaitingChestChoice,
             puzzleReveal: puzzleReveal?.tileNumber || null,
+            fishingPhase: isFishingMode ? player.fishing?.phase : null,
           });
+        })
+        .catch((error) => sendJson(res, 400, { error: error.message || 'Unable to parse request' }));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname.match(/^\/api\/games\/[^/]+\/player\/[^/]+\/fishing$/)) {
+      const [, , , codeRaw, , playerId] = pathname.split('/');
+      const game = config.games.get((codeRaw || '').toUpperCase());
+      if (!game) return sendJson(res, 404, { error: 'Game not found' });
+      const player = game.players.find((p) => p.playerId === playerId);
+      if (!player) return sendJson(res, 404, { error: 'Player not found' });
+      clampGameGold(game);
+      endGameWhenTimerExpires(game, { requestId: reqInfo.requestId });
+      if (game.state === 'ended') return sendJson(res, 410, { error: 'Game ended by host.' });
+      if (game.state !== 'live') return sendJson(res, 400, { error: 'Game has not started.' });
+      if ((game.settings.gameTypeFamily || 'goldquest') !== 'fishingfrenzy') {
+        return sendJson(res, 400, { error: 'Fishing actions are only available in Fishing Frenzy mode.' });
+      }
+
+      parseBody(req)
+        .then((body) => {
+          const action = String(body.action || '').toLowerCase();
+          ensureFishingState(player);
+          advanceFishingState(player);
+          const state = player.fishing;
+          const fishingWorldEffect = getFishingWorldEffect(game);
+
+          if (action === 'cast') {
+            if (state.phase !== 'cast') {
+              return sendJson(res, 409, { error: 'You already cast your rod.', fishing: getFishingPayload(player), fishingWorldEffect });
+            }
+            state.pendingCatch = rollFishingCatch();
+            state.lastResult = null;
+            state.phase = 'waiting';
+            state.waitUntilMs = Date.now() + randomBiteWaitMs();
+            if (state.pendingCatch?.tide?.active) {
+              game.eventLog.push({
+                at: new Date().toISOString(),
+                type: 'tide',
+                text: `${player.playerName} triggered ${state.pendingCatch.tide.label}.`,
+              });
+            }
+            if (state.pendingCatch?.rarity === 'rare') {
+              game.eventLog.push({
+                at: new Date().toISOString(),
+                type: 'rare',
+                text: `${player.playerName} hooked something rare in the deep.`,
+              });
+            }
+            if (state.pendingCatch?.event?.active) {
+              game.eventLog.push({
+                at: new Date().toISOString(),
+                type: 'event',
+                text: `${state.pendingCatch.event.label} is swirling around ${player.playerName}'s lure.`,
+              });
+            }
+            return sendJson(res, 200, {
+              ok: true,
+              playerName: player.playerName,
+              gold: player.gold,
+              fishing: getFishingPayload(player),
+              fishingWorldEffect,
+            });
+          }
+
+          if (action === 'pull') {
+            advanceFishingState(player);
+            if (state.phase !== 'pull') {
+              const payload = getFishingPayload(player);
+              const waitingMsg = payload.phase === 'waiting' ? 'Wait for a bite before pulling.' : 'Cast your rod first.';
+              return sendJson(res, 409, { error: waitingMsg, fishing: payload, fishingWorldEffect });
+            }
+            state.phase = 'question';
+            return sendJson(res, 200, {
+              ok: true,
+              playerName: player.playerName,
+              gold: player.gold,
+              questionIndex: player.questionIndex,
+              fishing: getFishingPayload(player),
+              fishingWorldEffect,
+            });
+          }
+
+          if (action === 'next') {
+            if (state.phase !== 'result') {
+              return sendJson(res, 409, { error: 'Finish this catch result first.', fishing: getFishingPayload(player), fishingWorldEffect });
+            }
+            state.phase = 'cast';
+            state.waitUntilMs = 0;
+            state.pendingCatch = null;
+            state.lastResult = null;
+            return sendJson(res, 200, {
+              ok: true,
+              playerName: player.playerName,
+              gold: player.gold,
+              fishing: getFishingPayload(player),
+              fishingWorldEffect,
+            });
+          }
+
+          return sendJson(res, 400, { error: 'Use action="cast", "pull", or "next".' });
         })
         .catch((error) => sendJson(res, 400, { error: error.message || 'Unable to parse request' }));
       return;
@@ -670,6 +959,9 @@ function createRoutes() {
       endGameWhenTimerExpires(game, { requestId: reqInfo.requestId });
       if (game.state === 'ended') return sendJson(res, 410, { error: 'Game ended by host.' });
       if (game.state !== 'live') return sendJson(res, 400, { error: 'Game has not started.' });
+      if ((game.settings.gameTypeFamily || 'goldquest') === 'fishingfrenzy') {
+        return sendJson(res, 400, { error: 'Fishing Frenzy has no chest actions.' });
+      }
       if (!player.pendingChest) return sendJson(res, 400, { error: 'No chest action pending.' });
 
       parseBody(req)

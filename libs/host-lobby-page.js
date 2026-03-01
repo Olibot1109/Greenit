@@ -37,6 +37,108 @@
 
     let gameState = null;
     let pollInterval = null;
+    let lobbyAudio = null;
+    let lobbyTracks = [];
+    let lobbyTrackQueue = [];
+    let lobbyCurrentTrack = '';
+    let lobbyMuted = false;
+    let audioUnlockBound = false;
+
+    async function ensureTracks() {
+      if (lobbyTracks.length) return lobbyTracks;
+      try {
+        const res = await fetch('/api/audio/tracks');
+        const data = await res.json();
+        const tracks = Array.isArray(data?.tracks)
+          ? data.tracks.filter((item) => typeof item === 'string' && item.trim())
+          : [];
+        lobbyTracks = tracks.length ? tracks : ['/mp3/1.mp3'];
+      } catch {
+        lobbyTracks = ['/mp3/1.mp3'];
+      }
+      return lobbyTracks;
+    }
+
+    function shuffleCopy(list) {
+      const out = Array.isArray(list) ? [...list] : [];
+      for (let i = out.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+      }
+      return out;
+    }
+
+    function nextRandomTrack() {
+      if (!lobbyTracks.length) return '';
+      if (!lobbyTrackQueue.length) lobbyTrackQueue = shuffleCopy(lobbyTracks);
+      if (!lobbyTrackQueue.length) return '';
+      let next = String(lobbyTrackQueue.shift() || '');
+      if (next === lobbyCurrentTrack && lobbyTrackQueue.length) {
+        next = String(lobbyTrackQueue.shift() || next);
+      }
+      lobbyCurrentTrack = next;
+      return next;
+    }
+
+    function ensureAudio() {
+      if (lobbyAudio) return lobbyAudio;
+      lobbyAudio = new Audio();
+      lobbyAudio.preload = 'auto';
+      lobbyAudio.volume = 0.55;
+      lobbyAudio.muted = lobbyMuted;
+      lobbyAudio.addEventListener('ended', () => {
+        const next = nextRandomTrack();
+        if (!next) return;
+        lobbyAudio.src = next;
+        lobbyAudio.play().catch(() => {});
+      });
+      return lobbyAudio;
+    }
+
+    function syncMuteIcon() {
+      const icon = document.getElementById('muteIcon');
+      if (!icon) return;
+      icon.className = lobbyMuted ? 'fas fa-volume-xmark' : 'fas fa-volume-up';
+    }
+
+    function removeAudioUnlockListeners() {
+      if (!audioUnlockBound) return;
+      audioUnlockBound = false;
+      document.removeEventListener('pointerdown', handleAudioUnlock);
+      document.removeEventListener('keydown', handleAudioUnlock);
+      document.removeEventListener('touchstart', handleAudioUnlock);
+    }
+
+    function bindAudioUnlockListeners() {
+      if (audioUnlockBound) return;
+      audioUnlockBound = true;
+      document.addEventListener('pointerdown', handleAudioUnlock, { passive: true });
+      document.addEventListener('keydown', handleAudioUnlock, { passive: true });
+      document.addEventListener('touchstart', handleAudioUnlock, { passive: true });
+    }
+
+    async function playLobbyMusic() {
+      const tracks = await ensureTracks();
+      if (!tracks.length) return;
+      const audio = ensureAudio();
+      audio.muted = lobbyMuted;
+      if (!audio.src) {
+        const first = nextRandomTrack();
+        audio.src = first || tracks[0];
+      }
+      if (!audio.paused) return;
+      try {
+        await audio.play();
+        removeAudioUnlockListeners();
+      } catch {
+        bindAudioUnlockListeners();
+      }
+    }
+
+    async function handleAudioUnlock() {
+      if (lobbyMuted) return;
+      await playLobbyMusic();
+    }
 
     // Poll for updates
     async function pollGame() {
@@ -61,6 +163,8 @@
           const mode = data.game.settings?.gameTypeFamily || 'goldquest';
           if (mode === 'goldquest') {
             window.location.href = `/goldquesthost.html?code=${gameCode}&pin=${hostPin}`;
+          } else if (mode === 'fishingfrenzy') {
+            window.location.href = `/fishingfrenzyhost.html?code=${gameCode}&pin=${hostPin}`;
           }
         } else if (data.game.state === 'ended') {
           console.log('Game has ended');
@@ -144,6 +248,8 @@
         const mode = gameState?.settings?.gameTypeFamily || 'goldquest';
         if (mode === 'goldquest') {
           window.location.href = `/goldquesthost.html?code=${gameCode}&pin=${hostPin}`;
+        } else if (mode === 'fishingfrenzy') {
+          window.location.href = `/fishingfrenzyhost.html?code=${gameCode}&pin=${hostPin}`;
         }
       } catch (err) {
         alert('Failed to start: ' + err.message);
@@ -177,6 +283,13 @@
       });
     }
 
+    function toggleMute() {
+      lobbyMuted = !lobbyMuted;
+      if (lobbyAudio) lobbyAudio.muted = lobbyMuted;
+      syncMuteIcon();
+      if (!lobbyMuted) playLobbyMusic();
+    }
+
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
@@ -186,8 +299,17 @@
     // Start polling
     pollGame();
     pollInterval = setInterval(pollGame, 2000);
+    syncMuteIcon();
+    playLobbyMusic();
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
       if (pollInterval) clearInterval(pollInterval);
+      if (lobbyAudio) {
+        lobbyAudio.pause();
+        lobbyAudio.src = '';
+      }
+      removeAudioUnlockListeners();
     });
+
+    window.toggleMute = toggleMute;

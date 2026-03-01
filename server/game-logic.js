@@ -4,6 +4,7 @@
 const gameCore = require('./game-core');
 const goldquestLogic = require('./goldquest-logic');
 const assembleLogic = require('./assemble-logic');
+const fishingFrenzyLogic = require('./fishingfrenzy-logic');
 
 // Core game functionality
 module.exports = {
@@ -22,6 +23,17 @@ module.exports = {
   createChestSkipResult: goldquestLogic.createChestSkipResult,
   INTERACTION_CHEST_TYPES: goldquestLogic.INTERACTION_CHEST_TYPES,
   resolveChestChoice: goldquestLogic.resolveChestChoice,
+
+  // From fishingfrenzy-logic.js
+  createFishingState: fishingFrenzyLogic.createFishingState,
+  ensureFishingState: fishingFrenzyLogic.ensureFishingState,
+  advanceFishingState: fishingFrenzyLogic.advanceFishingState,
+  getFishingPayload: fishingFrenzyLogic.getFishingPayload,
+  maybeRollPotionEffect: fishingFrenzyLogic.maybeRollPotionEffect,
+  setFishingWorldEffect: fishingFrenzyLogic.setFishingWorldEffect,
+  getFishingWorldEffect: fishingFrenzyLogic.getFishingWorldEffect,
+  rollFishingCatch: fishingFrenzyLogic.rollFishingCatch,
+  randomBiteWaitMs: fishingFrenzyLogic.randomBiteWaitMs,
 
   // From assemble-logic.js
   createPuzzleState: assembleLogic.createPuzzleState,

@@ -148,6 +148,8 @@
       
       if (mode === 'goldquest') {
         window.location.href = `/goldquestplay.html?code=${gameCode}&player=${playerId}`;
+      } else if (mode === 'fishingfrenzy') {
+        window.location.href = `/fishingfrenzyplay.html?code=${gameCode}&player=${playerId}`;
       } else if (mode === 'assemble') {
         window.location.href = `/play.html?code=${gameCode}&player=${playerId}`;
       } else {

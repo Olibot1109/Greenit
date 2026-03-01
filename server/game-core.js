@@ -2,6 +2,7 @@ const config = require('./config');
 const { logInfo, randomCode, randomHostPin, randomId, shuffle, normalizeGold, clampPlayerGold, clampGameGold } = require('./utils');
 const { resolveSet } = require('./quiz-api');
 const { createPuzzleState, getPuzzlePayload } = require('./assemble-logic');
+const { getFishingWorldEffect } = require('./fishingfrenzy-logic');
 
 async function createHostedGame({
   setId,
@@ -59,10 +60,16 @@ async function createHostedGame({
     shuffleQuestions: shouldShuffle,
   };
 
+  const modeNameByFamily = {
+    goldquest: 'Gold Quest',
+    fishingfrenzy: 'Fishing Frenzy',
+    assemble: 'Block Builder',
+  };
+
   const game = {
     code,
     hostPin: randomHostPin(),
-    mode: modeSettings.gameTypeFamily === 'assemble' ? 'Block Builder' : 'Gold Quest',
+    mode: modeNameByFamily[modeSettings.gameTypeFamily] || 'Gold Quest',
     set: selected,
     state: 'lobby',
     settings: modeSettings,
@@ -101,6 +108,7 @@ function publicGame(game) {
     setTitle: game.set.title,
     settings: game.settings,
     puzzle: null,
+    fishingWorldEffect: game.settings?.gameTypeFamily === 'fishingfrenzy' ? getFishingWorldEffect(game) : null,
     remainingSec,
     players: game.players.map((p) => ({
       playerId: p.playerId,

@@ -56,8 +56,6 @@
         
         if (!lobbyRes.ok) throw new Error(lobbyData.error || 'Game not found');
 
-        const mode = lobbyData.game?.settings?.gameTypeFamily || 'goldquest';
-
         // Join the game
         const res = await fetch(`/api/games/${code}/join`, {
           method: 'POST',
@@ -81,8 +79,9 @@
     async function createGame(type) {
       if (type === 'quick') {
         try {
+          const selectedMode = getSelectedMode();
           const body = {
-            gameTypeFamily: 'goldquest',
+            gameTypeFamily: selectedMode,
             gameType: 'timed',
             timeLimitSec: 300, // 5 minutes
             maxPlayers: 60,

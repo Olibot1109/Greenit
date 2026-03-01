@@ -670,7 +670,7 @@ function validateHostPayload(body) {
   const gameType = body.gameType || 'timed';
   if (!['question', 'timed', 'hybrid'].includes(gameType)) return 'Game type must be question, timed, or hybrid.';
   const gameTypeFamily = body.gameTypeFamily || 'goldquest';
-  if (!['goldquest', 'assemble'].includes(gameTypeFamily)) return 'Type must be goldquest or assemble.';
+  if (!['goldquest', 'fishingfrenzy', 'assemble'].includes(gameTypeFamily)) return 'Type must be goldquest, fishingfrenzy, or assemble.';
 
   if (body.maxPlayers !== undefined) {
     const maxPlayers = Number(body.maxPlayers);

@@ -3,6 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Greenit host lobby. Share the game code and start your live quiz." />
+  <meta name="theme-color" content="#9b59b6" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Greenit" />
+  <meta property="og:title" content="Greenit Host Lobby" />
+  <meta property="og:description" content="Join Greenit with the game code and play live." />
+  <meta property="og:image" content="/icons/Bingo.svg" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="Greenit Host Lobby" />
+  <meta property="twitter:description" content="Join Greenit with the game code and play live." />
+  <meta property="twitter:image" content="/icons/Bingo.svg" />
   <title>Host Lobby - Greenit</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -146,6 +157,29 @@
     }
 
     .delete-btn i {
+      font-size: 1.2rem;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .icon-btn {
+      color: white;
+      font-size: 0.85rem;
+      text-align: center;
+      cursor: pointer;
+      opacity: 0.9;
+      transition: opacity 0.2s;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .icon-btn:hover {
+      opacity: 1;
+    }
+
+    .icon-btn i {
       font-size: 1.2rem;
       display: block;
       margin-bottom: 2px;
@@ -368,6 +402,9 @@
         <div class="copy-link" onclick="copyJoinLink()">
           <i class="fas fa-copy"></i>
         </div>
+        <button id="muteBtn" class="icon-btn" onclick="toggleMute()" title="Toggle music">
+          <i id="muteIcon" class="fas fa-volume-up"></i>
+        </button>
         <button class="delete-btn" onclick="closeLobby()" title="Delete Lobby">
           <i class="fas fa-trash"></i>
         </button>

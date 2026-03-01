@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="tunaBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9dc6dd"/>
+      <stop offset="1" stop-color="#5d8fb0"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="22" fill="#eaf7ff"/>
+  <ellipse cx="66" cy="66" rx="42" ry="24" fill="url(#tunaBody)"/>
+  <polygon points="22,66 6,52 6,80" fill="#48748f"/>
+  <polygon points="64,42 74,26 84,42" fill="#6e9fbd"/>
+  <circle cx="86" cy="62" r="4" fill="#24313d"/>
+  <path d="M88 72 Q80 76 72 72" stroke="#2e4b5e" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>
