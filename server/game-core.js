@@ -55,7 +55,7 @@ async function createHostedGame({
     gameType: gameType || 'timed',
     questionLimit: Math.max(1, Math.min(Number(questionLimit) || selected.questions.length, selected.questions.length)),
     timeLimitSec: Math.max(60, Math.min(Number(timeLimitSec) || 120, 1800)),
-    maxPlayers: Math.max(1, Math.min(Number(maxPlayers) || 60, 120)),
+    maxPlayers: Math.max(1, Math.min(Number(maxPlayers) || 60, 1000)),
     feedbackDelaySec: Math.max(0, Math.min(Number(feedbackDelaySec) || 1, 5)),
     shuffleQuestions: shouldShuffle,
   };

@@ -674,8 +674,8 @@ function validateHostPayload(body) {
 
   if (body.maxPlayers !== undefined) {
     const maxPlayers = Number(body.maxPlayers);
-    if (!Number.isInteger(maxPlayers) || maxPlayers < 1 || maxPlayers > 120) {
-      return 'Max players must be between 1 and 120.';
+    if (!Number.isInteger(maxPlayers) || maxPlayers < 1 || maxPlayers > 1000) {
+      return 'Max players must be between 1 and 1000.';
     }
   }
 
