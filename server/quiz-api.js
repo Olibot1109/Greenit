@@ -543,8 +543,8 @@ function parseQuizGeneratePayload(body) {
 }
 
 async function generateQuizSetWithGroq({ prompt, questionCount, difficulty, withImages, imageTheme }) {
-  const apiKey = "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"
-  if (!apiKey) throw new Error('GROQ_API_KEY is not configured on the server.');
+  const apiKey = process.env.GROQ_KEY;
+  if (!apiKey) throw new Error('GROQ_KEY is not configured on the server.');
   const startedAt = Date.now();
   logInfo('ai.generate.start', {
     prompt: truncateLogString(prompt, 120),
