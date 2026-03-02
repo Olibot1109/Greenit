@@ -126,6 +126,47 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function trimTrailingZeros(text) {
+  return String(text || '').replace(/(\.\d*?[1-9])0+$/u, '$1').replace(/\.0+$/u, '');
+}
+
+function formatCompactNumber(value) {
+  const num = Number(value || 0);
+  if (!Number.isFinite(num)) return '0';
+  const abs = Math.abs(num);
+  const units = [
+    { value: 1e12, suffix: 'T' },
+    { value: 1e9, suffix: 'B' },
+    { value: 1e6, suffix: 'M' },
+    { value: 1e3, suffix: 'K' },
+  ];
+  for (const unit of units) {
+    if (abs >= unit.value) {
+      const scaled = num / unit.value;
+      const scaledAbs = Math.abs(scaled);
+      const digits = scaledAbs >= 100 ? 0 : (scaledAbs >= 10 ? 1 : 2);
+      return `${trimTrailingZeros(scaled.toFixed(digits))}${unit.suffix}`;
+    }
+  }
+  return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
+function formatNumbersInText(text) {
+  const source = String(text || '');
+  return source.replace(/[+-]?\d[\d,]*(?:\.\d+)?/gu, (match, offset, fullText) => {
+    const start = Number(offset || 0);
+    const end = start + match.length;
+    const prev = start > 0 ? fullText[start - 1] : '';
+    const next = end < fullText.length ? fullText[end] : '';
+    if ((prev && /[A-Za-z0-9_]/u.test(prev)) || (next && /[A-Za-z0-9_]/u.test(next))) {
+      return match;
+    }
+    const normalized = Number(match.replace(/,/gu, ''));
+    if (!Number.isFinite(normalized)) return match;
+    return formatCompactNumber(normalized);
+  });
+}
+
 function shouldRedirectForMissingGame(status, message) {
   const normalized = String(message || '').toLowerCase();
   return status === 404 || status === 410 || normalized.includes('game not found') || normalized.includes('player not found');
@@ -143,7 +184,7 @@ function setHud(data) {
   if (data?.playerName) playerName = data.playerName;
   document.getElementById('hudName').textContent = playerName;
   const pounds = Number(data?.gold || data?.totalGold || 0);
-  document.getElementById('goldAmount').textContent = pounds.toLocaleString();
+  document.getElementById('goldAmount').textContent = formatCompactNumber(pounds);
 }
 
 function setSceneHint(text) {
@@ -512,12 +553,12 @@ function showCatchResult(data) {
     kickerEl.textContent = tierKicker[tier] || "Angler's Catch";
   }
   titleEl.textContent = result?.name || 'Unknown Catch';
-  subEl.textContent = result?.text || 'You landed it.';
+  subEl.textContent = formatNumbersInText(result?.text || 'You landed it.');
   setSceneHint('Click cast again to throw another line');
   updateLureBadge(result);
 
   tierLetterEl.textContent = tier || '-';
-  weightEl.textContent = `${Number(result?.lbs || 0).toLocaleString()} lbs`;
+  weightEl.textContent = `${formatCompactNumber(result?.lbs || 0)} lbs`;
 
   if (result?.imageUrl) {
     imageEl.src = result.imageUrl;
@@ -609,8 +650,8 @@ function fitTextToBox(el, maxSize, minSize) {
 
 function fitQuestionLayout() {
   const qText = document.getElementById('questionText');
-  fitTextToBox(qText, 86, 26);
-  document.querySelectorAll('#answerGrid .answer-btn').forEach((btn) => fitTextToBox(btn, 56, 18));
+  fitTextToBox(qText, 76, 20);
+  document.querySelectorAll('#answerGrid .answer-btn').forEach((btn) => fitTextToBox(btn, 42, 14));
 }
 
 function showFinished(data) {
@@ -622,7 +663,7 @@ function showFinished(data) {
   setVisualPhase('result');
   setSceneHint('Game complete');
   updateLureBadge(null);
-  document.getElementById('finalGold').innerHTML = `${Number(data?.gold || 0).toLocaleString()} lbs`;
+  document.getElementById('finalGold').innerHTML = `${formatCompactNumber(data?.gold || 0)} lbs`;
   const winnerEl = document.getElementById('finalWinner');
   if (winnerEl) {
     const winnerName = String(data?.winner?.playerName || '').trim();
@@ -630,8 +671,8 @@ function showFinished(data) {
     if (winnerName) {
       const ownName = String(data?.playerName || playerName || '').trim();
       winnerEl.textContent = winnerName === ownName
-        ? `Winner: You (${winnerLbs.toLocaleString()} lbs)`
-        : `Winner: ${winnerName} (${winnerLbs.toLocaleString()} lbs)`;
+        ? `Winner: You (${formatCompactNumber(winnerLbs)} lbs)`
+        : `Winner: ${winnerName} (${formatCompactNumber(winnerLbs)} lbs)`;
     } else {
       winnerEl.textContent = '';
     }

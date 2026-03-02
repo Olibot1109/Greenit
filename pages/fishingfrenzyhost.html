@@ -123,7 +123,7 @@
       display: grid;
       grid-template-columns: 1fr 1.45fr;
       gap: clamp(12px, 1.6vw, 24px);
-      align-items: start;
+      align-items: stretch;
       min-height: 0;
       height: 100%;
       flex: 1;
@@ -143,9 +143,10 @@
 
     .right-stack {
       display: grid;
-      grid-template-rows: auto auto auto;
+      grid-template-rows: minmax(0, 1fr) auto auto;
       gap: 12px;
-      align-content: start;
+      align-content: stretch;
+      height: 100%;
       min-height: 0;
     }
 
@@ -233,23 +234,29 @@
       border-radius: 14px;
       padding: 8px;
       box-shadow: 0 7px 0 rgba(0,0,0,0.2);
-      align-self: start;
+      align-self: stretch;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
     }
 
     .right-inner {
       border: 6px solid var(--gold);
       border-radius: 10px;
       min-height: 0;
-      height: auto;
-      display: block;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
       padding: 10px;
     }
 
     .progress-log {
       margin-top: 0;
       width: 100%;
-      height: auto;
-      max-height: clamp(140px, 34vh, 360px);
+      height: 100%;
+      max-height: none;
+      min-height: 0;
+      flex: 1 1 auto;
       overflow: auto;
       background: rgba(170, 24, 33, 0.35);
       border-radius: 10px;
@@ -1133,6 +1140,7 @@
       }
 
       .host-wrap { height: auto; min-height: calc(100vh - 78px); overflow-y: auto; }
+      .right-stack { height: auto; grid-template-rows: minmax(280px, auto) auto auto; }
       .left-board { height: clamp(260px, 54vh, 600px); }
       .right-inner { min-height: 280px; }
       .bottom-gold { margin-top: 2px; }

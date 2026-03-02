@@ -35,6 +35,47 @@
       return div.innerHTML;
     }
 
+    function trimTrailingZeros(text) {
+      return String(text || '').replace(/(\.\d*?[1-9])0+$/u, '$1').replace(/\.0+$/u, '');
+    }
+
+    function formatCompactNumber(value) {
+      const num = Number(value || 0);
+      if (!Number.isFinite(num)) return '0';
+      const abs = Math.abs(num);
+      const units = [
+        { value: 1e12, suffix: 'T' },
+        { value: 1e9, suffix: 'B' },
+        { value: 1e6, suffix: 'M' },
+        { value: 1e3, suffix: 'K' },
+      ];
+      for (const unit of units) {
+        if (abs >= unit.value) {
+          const scaled = num / unit.value;
+          const scaledAbs = Math.abs(scaled);
+          const digits = scaledAbs >= 100 ? 0 : (scaledAbs >= 10 ? 1 : 2);
+          return `${trimTrailingZeros(scaled.toFixed(digits))}${unit.suffix}`;
+        }
+      }
+      return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
+    function formatNumbersInText(text) {
+      const source = String(text || '');
+      return source.replace(/[+-]?\d[\d,]*(?:\.\d+)?/gu, (match, offset, fullText) => {
+        const start = Number(offset || 0);
+        const end = start + match.length;
+        const prev = start > 0 ? fullText[start - 1] : '';
+        const next = end < fullText.length ? fullText[end] : '';
+        if ((prev && /[A-Za-z0-9_]/u.test(prev)) || (next && /[A-Za-z0-9_]/u.test(next))) {
+          return match;
+        }
+        const normalized = Number(match.replace(/,/gu, ''));
+        if (!Number.isFinite(normalized)) return match;
+        return formatCompactNumber(normalized);
+      });
+    }
+
     function ordinalLabel(num) {
       const n = Number(num || 0);
       if (n % 100 >= 11 && n % 100 <= 13) return `${n}th`;
@@ -213,7 +254,7 @@
       latestPlayersSnapshot = players;
 
       const totalGold = players.reduce((sum, player) => sum + Number(player.gold || 0), 0);
-      document.getElementById('totalGold').textContent = totalGold.toLocaleString();
+      document.getElementById('totalGold').textContent = formatCompactNumber(totalGold);
 
       const startBtn = document.getElementById('startGameBtn');
       startBtn.disabled = !isLobby;
@@ -233,7 +274,7 @@
                 <div class="rank-place">${ordinalLabel(index + 1)}</div>
                 <div class="rank-avatar">${avatar}</div>
                 <div class="rank-name">${escapeHtml(player.playerName || 'Player')}</div>
-                <div class="rank-gold">${Number(player.gold || 0).toLocaleString()} <i class="fa-solid fa-coins" style="font-size:0.68em;"></i></div>
+                <div class="rank-gold">${formatCompactNumber(player.gold || 0)} <i class="fa-solid fa-coins" style="font-size:0.68em;"></i></div>
               </div>
             </div>
           `;
@@ -294,15 +335,14 @@
         progressLog.innerHTML = '';
         return;
       }
-      const compact = events.slice(0, 8);
-      progressLog.innerHTML = compact.map((event) => {
+      progressLog.innerHTML = events.map((event) => {
         const parsed = splitEventText(event.text);
         return `
           <div class="progress-log-item">
             <div class="log-text">
               ${parsed.name ? `<span class="log-name" style="color:${nameColor(parsed.name)};">${escapeHtml(parsed.name)}</span>` : ''}
               ${parsed.name && parsed.rest ? ' ' : ''}
-              ${escapeHtml(parsed.rest || '')}
+              ${escapeHtml(formatNumbersInText(parsed.rest || ''))}
             </div>
           </div>
         `;
@@ -341,7 +381,7 @@
             <div class="leaderboard-item-place">${ordinalLabel(index + 1)}</div>
             <div class="leaderboard-item-avatar">${avatar}</div>
             <div class="leaderboard-item-name">${escapeHtml(player.playerName || 'Player')}</div>
-            <div class="leaderboard-item-gold">${Number(player.gold || 0).toLocaleString()} <i class="fa-solid fa-coins"></i></div>
+            <div class="leaderboard-item-gold">${formatCompactNumber(player.gold || 0)} <i class="fa-solid fa-coins"></i></div>
           </div>
         `;
       }).join('');
@@ -380,7 +420,7 @@
             <div class="podium-top">
               <div class="podium-head"><div class="podium-avatar">${avatar}</div></div>
               <div class="podium-name">${escapeHtml(player?.playerName || '-')}</div>
-              <div class="podium-gold">${Number(player?.gold || 0).toLocaleString()} gold</div>
+              <div class="podium-gold">${formatCompactNumber(player?.gold || 0)} gold</div>
             </div>
             <div class="podium-inner">
               <div class="podium-rank">${ordinalLabel(place)}</div>
