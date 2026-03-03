@@ -16,6 +16,7 @@
     }
 
     let pollInterval = null;
+    let fitRafId = 0;
 
     async function pollGame() {
       try {
@@ -90,6 +91,12 @@
       document.getElementById('answerGrid').innerHTML = q.answers.map((ans, i) => `
         <button class="answer-btn" onclick="submitAnswer(${i})">${escapeHtml(ans)}</button>
       `).join('');
+
+      if (fitRafId) cancelAnimationFrame(fitRafId);
+      fitRafId = requestAnimationFrame(() => {
+        fitQuestionLayout();
+        fitRafId = 0;
+      });
     }
 
     async function submitAnswer(index) {
@@ -162,5 +169,53 @@
       return d.innerHTML;
     }
 
+    function fitTextToBox(el, maxSize, minSize) {
+      if (!el) return;
+      let size = maxSize;
+      el.style.fontSize = `${size}px`;
+      while (size > minSize && (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth)) {
+        size -= 1;
+        el.style.fontSize = `${size}px`;
+      }
+    }
+
+    function nudgeFontDown(el, minSize) {
+      if (!el) return false;
+      const current = Number.parseFloat(getComputedStyle(el).fontSize || '0');
+      if (!Number.isFinite(current) || current <= minSize) return false;
+      el.style.fontSize = `${Math.max(minSize, current - 1)}px`;
+      return true;
+    }
+
+    function fitQuestionLayout() {
+      const panel = document.querySelector('#questionStage .panel');
+      const qText = document.getElementById('questionText');
+      if (!qText) return;
+      qText.style.fontSize = '';
+      fitTextToBox(qText, 44, 18);
+      const buttons = Array.from(document.querySelectorAll('#answerGrid .answer-btn'));
+      buttons.forEach((btn) => fitTextToBox(btn, 24, 13));
+
+      let guard = 0;
+      while (panel && panel.scrollHeight > panel.clientHeight && guard < 32) {
+        let changed = nudgeFontDown(qText, 16);
+        buttons.forEach((btn) => {
+          changed = nudgeFontDown(btn, 11) || changed;
+        });
+        if (!changed) break;
+        guard += 1;
+      }
+    }
+
     pollGame();
     pollInterval = setInterval(pollGame, 1500);
+
+    window.addEventListener('resize', () => {
+      if (!document.getElementById('questionStage')?.classList.contains('hidden')) {
+        if (fitRafId) cancelAnimationFrame(fitRafId);
+        fitRafId = requestAnimationFrame(() => {
+          fitQuestionLayout();
+          fitRafId = 0;
+        });
+      }
+    });

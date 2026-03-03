@@ -66,6 +66,7 @@
       box-shadow: 0 8px 0 rgba(0,0,0,0.2);
       padding: 24px;
       margin-bottom: 16px;
+      overflow: hidden;
     }
 
     .question-number {
@@ -79,6 +80,8 @@
       font-size: 1.5rem;
       text-align: center;
       margin: 0 0 16px;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .question-image {
@@ -94,6 +97,8 @@
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
+      align-content: stretch;
+      overflow: auto;
     }
 
     @media (max-width: 500px) {
@@ -176,9 +181,11 @@
     @media (max-width: 1024px) {
       .game-container { padding: 14px; }
       .question-text { font-size: clamp(1.2rem, 3.2vw, 1.8rem); }
+      .answer-grid { grid-template-columns: 1fr; }
       .answer-btn {
         font-size: clamp(0.95rem, 2.2vw, 1.1rem);
         padding: 14px 12px;
+        min-height: 62px;
       }
     }
 

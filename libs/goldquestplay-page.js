@@ -511,10 +511,35 @@
       }
     }
 
+    function nudgeFontDown(el, minSize) {
+      if (!el) return false;
+      const current = Number.parseFloat(getComputedStyle(el).fontSize || '0');
+      if (!Number.isFinite(current) || current <= minSize) return false;
+      el.style.fontSize = `${Math.max(minSize, current - 1)}px`;
+      return true;
+    }
+
     function fitQuestionLayout() {
       const qText = document.getElementById('questionText');
+      const qContext = document.getElementById('questionContext');
+      const qCard = document.getElementById('questionCard');
+      if (qText) qText.style.fontSize = '';
+      if (qContext) qContext.style.fontSize = '';
       fitTextToBox(qText, 80, 20);
-      document.querySelectorAll('#answerGrid .answer-btn').forEach((btn) => fitTextToBox(btn, 42, 14));
+      const buttons = Array.from(document.querySelectorAll('#answerGrid .answer-btn'));
+      buttons.forEach((btn) => fitTextToBox(btn, 42, 14));
+
+      // Final safety pass for long prompts on iPad: shrink text until the card fits.
+      let guard = 0;
+      while (qCard && qCard.scrollHeight > qCard.clientHeight && guard < 40) {
+        let changed = nudgeFontDown(qText, 18);
+        changed = nudgeFontDown(qContext, 14) || changed;
+        buttons.forEach((btn) => {
+          changed = nudgeFontDown(btn, 12) || changed;
+        });
+        if (!changed) break;
+        guard += 1;
+      }
     }
 
     function showFinished(data) {
